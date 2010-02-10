@@ -1,0 +1,40 @@
+#list_price-field {
+  float: left;
+  margin-right: 20px;
+}
+#sale_price-field {
+  float: left;
+  clear: right;
+}
+#inventory-field {
+  clear: left;
+}
+  #inventory-field #unlimitted {
+    margin-right: 20px;
+  }
+.actions-bar {
+  position: relative;
+}
+#close {
+  position: absolute;
+  left: 0; top: 0;
+}
+
+#sku-field {
+  float: left;
+  margin-right: 20px;
+}
+#status-field {
+  float: left;
+  clear: right;
+}
+#name-field {
+  clear: left;
+}
+
+.page {
+  display: none;
+}
+.page.first {
+  display: block;
+}

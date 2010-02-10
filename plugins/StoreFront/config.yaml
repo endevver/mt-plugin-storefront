@@ -1,0 +1,146 @@
+id: StoreFront
+name: 'Store Front'
+description: 'A plugin that allows for your system to accept, receive and track payments and orders for good and subscriptions on your system.'
+version: 0.1
+schema_version: 1.1
+
+object_types:
+  asset.product: MT::Asset::Product
+#  payment: Subscriptions::Payment
+#  subscription: StoreFront::Subscription
+
+config_settings:
+  SubscriptionDriver:
+    default: StoreFront::PaymentDriver::PayPal
+  PayPalScript:
+    default: paypal.cgi
+
+options:
+  fieldsets:
+    storefront:
+      label: Store Front
+      order: 1
+    urls:
+      label: URLs
+      order: 2
+    paypal:
+      label: PayPal
+      order: 3
+    google:
+      label: Google Checkout
+      order: 4
+  my_keyfile:
+    label: Your Key File
+    type: file
+    destination: paypal/%e
+    order: 1
+    scope: system
+    fieldset: paypal
+  my_certfile:
+    label: Your Certificate
+    type: file
+    destination: paypal/%e
+    order: 2
+    scope: system
+    fieldset: paypal
+  paypal_certfile:
+    label: PayPal Certificate
+    type: file
+    destination: paypal/%e
+    order: 3
+    scope: system
+    fieldset: paypal
+#  google_merchant_id:
+#    label: Google Merchant ID
+#    type: text
+#    scope: system
+#    fieldset: google
+  sandbox_mode:
+    label: Sandbox Mode?
+    type: checkbox
+    scope: system
+    default: 1
+    fieldset: storefront
+  paypal_currency:
+    label: Currency
+    type: select
+    scope: system
+    default: USD
+    values: AUD,BRL,CAD,CZK,DKK,EUR,HKD,HUF,ILS,JPY,MYR,MXN,NOK,NZD,PHP,PLN,GBP,SGD,SEK,CHF,TWD,THB,USD
+    fieldset: paypal
+  paypal_account_id:
+    label: PayPal Account
+    hint: "The email address of the account holder to which PayPal payments will be sent."
+    type: text
+    scope: system
+    fieldset: paypal
+    order: 1
+  buynow_button:
+    type: radio-image
+    label: Buy Now Button
+    scope: system
+    fieldset: paypal
+    values: >
+       "https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/btn_xpressCheckout.gif":"Checkout","https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but23.gif":"Buy Now 1","https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but3.gif":"Buy Now 2"
+    default: Checkout
+  purchase_success:
+    type: text
+    label: Purchase Success URL
+    hint: "The URL customers will be directed to after they have successfully purchased the item."
+    fieldset: urls
+    order: 1
+  purchase_cancel:
+    type: text
+    label: Purchase Cancel URL
+    hint: "The URL customers will be directed to if they elect to cancel their purchase."
+    fieldset: urls
+    order: 2
+  statii:
+    label: Statuses
+    type: textarea
+    hint: "Specify the list of produt statuses, delimitted by a newline."
+    scope: system
+    fieldset: storefront
+    rows: 5
+    default: | 
+       available
+       out of stock
+       discontinued
+       pre-order only
+
+applications:
+  paypal:
+    handler: 'StoreFront::PayPal::App'
+  cms:
+    menus:
+      create:product:
+        label: Product
+        order: 1000
+        dialog: create_product
+        view: blog
+      store:
+        label: Store
+        order: 1000
+        view: blog
+      store:products:
+        label: Manage Products
+        mode: list_product
+        order: 10
+      store:subscriptions:
+        label: Manage Subscriptions
+        order: 20
+      store:orders:
+        label: Manage Payments
+        order: 30
+    methods:
+      create_product: $StoreFront::StoreFront::CMS::create_product
+      edit_product: $StoreFront::StoreFront::CMS::edit_product
+      list_product: $StoreFront::StoreFront::CMS::list_product
+#      create_sub: $StoreFront::StoreFront::CMS::create_subscription
+
+callbacks:
+
+tags:
+  function:
+    PayPalButton: $StoreFront::StoreFront::PayPal::Tags::button
+#    BuyButton: $StoreFront::StoreFront::Tags::buy_button

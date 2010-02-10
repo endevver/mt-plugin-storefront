@@ -1,0 +1,190 @@
+<mt:setvarblock name="page_title"><__trans phrase="Create Product"></mt:setvarblock>
+<mt:setvarblock name="html_head" append="1">
+    <link rel="stylesheet" href="<mt:var name="static_uri">plugins/StoreFront/app.css" type="text/css" />
+    <script type="text/javascript" src="<mt:var name="static_uri">js/dialog.js"></script>
+    <script type="text/javascript" src="<mt:var name="static_uri">plugins/StoreFront/app.js"></script>
+    <script type="text/javascript" src="<mt:var name="static_uri">jquery/jquery.js"></script>
+    <script type="text/javascript" src="<mt:var name="static_uri">jquery/jquery.form.js"></script>
+<mt:ignore>
+    <script type="text/javascript" src="<mt:var name="static_uri">plugins/StoreFront/jquery.caret.js"></script>
+</mt:ignore>
+    <script type="text/javascript">
+    <!--
+$(document).ready( function() {
+  var page = 1;
+/*
+  $('.price-field input').focus( function() {
+    var l = $(this).val().length;
+    $(this).caret({ start: l, end: l});
+  });
+*/
+  $('#payment_type-field select').change( function() {
+    if ($(this).val() == 1) {
+      $('.actions-bar #continue').html('<__trans phrase="Finish">');
+    } else {
+      $('.actions-bar #continue').html('<__trans phrase="Continue">');
+    }
+  });
+  $('.actions-bar #continue').click( function() {
+    if ( page == 1 && $('#payment_type-field select').val() == 2 ) {
+      page++;
+      $('.page').hide();
+      $('#page-' + page).show();
+      return;
+    }
+    $('#edit_product').ajaxSubmit({
+      type: 'post',
+      success: function() {
+        alert("Success!");
+        closeDialog();          
+        }
+    });
+  });
+  $('.actions-bar #back').click( function() {
+      page--;
+      $('.page').hide();
+      $('#page-' + page).show();
+  });
+});
+
+    // -->
+    </script>
+</mt:setvarblock>
+<mt:include name="dialog/header.tmpl">
+
+<div id="edit_product_content">
+  <form id="edit_product"
+        name="edit_product" 
+        method="post" 
+        action="<$mt:var name="script_url"$>">
+    <input type="hidden" name="__mode" value="edit_product" />
+    <input type="hidden" name="blog_id" value="<$mt:var name="blog_id"$>" />
+
+    <div id="page-1" class="page first">
+      <mtapp:setting
+          id="sku"
+          label_class="top-label"
+          label="<__trans phrase="SKU ID">"
+          hint="Enter a personal identifier for this product."
+          show_hint="1">
+        <input name="sku_id" type="text" size="30" value="<$mt:var name="sku"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="status"
+          label_class="top-label"
+          label="<__trans phrase="Status">">
+        <select name="status">
+<mt:loop name="status_loop">
+          <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
+</mt:loop>
+        </select>
+      </mtapp:setting>
+      <mtapp:setting
+          id="name"
+          label_class="top-label"
+          label="<__trans phrase="Product Name">"
+          hint="The name of the product."
+          show_hint="0">
+        <input class="full-width" name="label" type="text" size="60" value="<$mt:var name="name"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="description"
+          label_class="top-label"
+          label="<__trans phrase="Description">">
+        <textarea class="full-width" rows="3" name="description"><$mt:var name="description"$></textarea>
+      </mtapp:setting>
+      <mtapp:setting
+          id="list_price"
+          class="price-field"
+          label_class="top-label"
+          label="<__trans phrase="List Price">">
+        <input name="list_price" type="text" size="10" value="<$mt:var name="list_price" default="$"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="sale_price"
+          class="price-field"
+          label_class="top-label"
+          label="<__trans phrase="Sale Price">">
+        <input name="sale_price" type="text" size="10" value="<$mt:var name="sale_price" default="$"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="inventory"
+          label_class="top-label"
+          label="<__trans phrase="Inventory">">
+        <label id="unlimitted"><input type="radio" name="inventory_type" value="0" <mt:if name="inventory_type" eq="1">checked </mt:if>/> Unlimitted</label>
+        <label id="limited"><input type="radio" name="inventory_type" value="1" <mt:if name="inventory_type" eq="2">checked </mt:if>/> <input name="inventory" type="text" size="10" value="<$mt:var name="inventory"$>" /> units</label>
+      </mtapp:setting>
+      <mtapp:setting
+          id="payment_type"
+          label_class="top-label"
+          label="<__trans phrase="Payment Type">">
+        <select name="payment_type">
+          <option value="1"<mt:if name="payment_type" eq="1"> selected</mt:if>>One Time Payment</option>
+          <option value="2"<mt:if name="payment_type" eq="2"> selected</mt:if>>Recurring Payment (a.k.a. subscription)</option>
+        </select>
+      </mtapp:setting>
+    </div>
+    <div id="page-2" class="page">
+      <h3>Subscription Options</h3>
+      <mtapp:setting
+          id="period"
+          label_class="top-label"
+          label="<__trans phrase="Period">"
+          hint="The frequency to bill the customer."
+          show_hint="1">
+        <select name="period">
+<mt:loop name="period_loop">
+          <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
+</mt:loop>
+        </select>
+      </mtapp:setting>
+      <mtapp:setting
+          id="start_date"
+          label_class="top-label"
+          label="<__trans phrase="Billing Start">"
+          hint="How many days to wait until you start billing the customer."
+          show_hint="1">
+        <input name="start_date" type="text" size="10" value="<$mt:var name="start_date"$>" default="0" /> days
+      </mtapp:setting>
+      <mtapp:setting
+          id="recurrence"
+          label_class="top-label"
+          label="<__trans phrase="Recurrence">"
+          hint="How many times this customer will be billed prior to expiration."
+          show_hint="1">
+        <label id="forever"><input type="radio" name="recurrence_type" value="0" <mt:if name="recurrence" eq="0">checked </mt:if>/> Forever</label>
+        <label><input type="radio" name="recurrence_type" value="1" <mt:if name="recurrence" gt="0">checked </mt:if>/> <input name="recurrence" type="text" size="5" value="<$mt:var name="recurrence"$>" /> times</label>
+      </mtapp:setting>
+    </div>
+
+    <div class="actions-bar">
+      <div class="actions-bar-inner pkg actions">
+        <button
+             id="continue"
+             onclick="javascript: void(0)"
+             type="button"
+             accesskey="s"
+             title="<__trans phrase="Continue (c)">"
+             class="primary-button disabled-button">
+          <mt:if name="payment_type" eq="2"><__trans phrase="Continue"><mt:else><__trans phrase="Finish"></mt:if></button>
+        <button
+             id="back"
+             onclick="javascript: void(0)"
+             type="button"
+             class="back"
+             title="<__trans phrase="Back">">
+          <__trans phrase="Back"></button>
+        <button
+             id="close"
+             onclick="closeDialog(); return false"
+             type="button"
+             accesskey="x"
+             class="cancel close"
+             title="<__trans phrase="Close (x)">">
+          <__trans phrase="Cancel"></button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<mt:include name="dialog/footer.tmpl">
