@@ -18,6 +18,17 @@ $SIG{INT} = sub { die "Interrupted\n"; };
 
 $| = 1;    # autoflush
 
+my $MAP = {
+    name => 'item_name',
+    amount => 'amount',
+    quantity => 'quantity',
+    item_number => 'item_number',
+    edit_quantity => 'undefined_quantity',
+    shipping_amount => 'shipping',
+    shipping_per_item => 'shipping2',
+    handling_amount => 'handling'
+};
+
 sub new {
     my $class  = shift;
     my $params = shift;
@@ -52,16 +63,10 @@ sub as_html {
     my ($idx) = @_;
     $idx ||= '';
     $idx = '_' . $idx unless $idx eq '';
-    my $html = <<ENDHTML;
-<input type="hidden" name="item_name$idx" value="$self->{'name'}" />
-<input type="hidden" name="amount$idx" value="$self->{'amount'}" />
-<input type="hidden" name="quantity$idx" value="$self->{'quantity'}" /> 
-<input type="hidden" name="item_number$idx" value="$self->{'item_number'}" />
-<input type="hidden" name="undefined_quantity$idx" value="$self->{'edit_quantity'}" />
-<input type="hidden" name="shipping$idx" value="$self->{'shipping_amount'}">
-<input type="hidden" name="shipping2$idx" value="$self->{'shipping_per_item'}">
-<input type="hidden" name="handling$idx" value="$self->{'handling_amount'}">
-ENDHTML
+    my $html;
+    foreach my $key (sort keys %$MAP) {
+	$html .= '<input type="hidden" name="'.$MAP->{$key}.$idx.'" value="'.$self->{$key}.'" />'."\n"; 
+    }
     my @options = @{$self->options};
     my $i = 0;
     foreach my $o (@options) {
@@ -70,6 +75,25 @@ ENDHTML
         $i++;
     }
     return $html;
+}
+
+sub as_params {
+   my $self = shift;
+   my ($idx) = @_;
+   $idx ||= '';
+   $idx = '_' . $idx unless $idx eq '';
+   my $txt;
+   foreach my $key (sort keys %$MAP) {
+       $txt .= $MAP->{$key}.$idx.'='.$self->{$key}."\n"; 
+   }
+   my @options = @{$self->options};
+   my $i = 0;
+   foreach my $o (@options) {
+       $txt .= 'on'.$i.$idx.'='.$o->{label}."\n";
+       $txt .= 'os'.$i.$idx.'='.$o->{value}."\n";
+       $i++;
+   }
+   return $txt;
 }
 
 1;

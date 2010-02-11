@@ -38,3 +38,21 @@
 .page.first {
   display: block;
 }
+
+#steps {
+  margin-bottom: 10px;
+}
+#steps li {
+  float: left;
+  background: none;
+  color: black;
+  margin-right: 20px;
+  padding: 2px 5px 2px 5px;
+}
+#steps li.active {
+  background-color: #336699;
+  color: white;
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}

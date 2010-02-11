@@ -29,25 +29,38 @@ options:
     google:
       label: Google Checkout
       order: 4
+  openssl: 
+    label: Path to OpenSSL
+    type: text
+    order: 3
+    hint: The path to OpenSSL on your server, used for encrypting and signing payment buttons.
+    fieldset: storefront
   my_keyfile:
     label: Your Key File
     type: file
     destination: paypal/%e
-    order: 1
+    order: 2
     scope: system
     fieldset: paypal
   my_certfile:
     label: Your Certificate
     type: file
     destination: paypal/%e
-    order: 2
+    order: 3
     scope: system
     fieldset: paypal
   paypal_certfile:
     label: PayPal Certificate
     type: file
     destination: paypal/%e
-    order: 3
+    order: 1
+    scope: system
+    fieldset: paypal
+  my_cert_id:
+    label: Your Certificate ID
+    hint: Enter the certificate ID assigned to by PayPal when you uploaded your public certificate.
+    type: text
+    order: 4
     scope: system
     fieldset: paypal
 #  google_merchant_id:

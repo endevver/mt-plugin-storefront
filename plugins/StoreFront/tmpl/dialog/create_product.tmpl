@@ -18,6 +18,11 @@ $(document).ready( function() {
     $(this).caret({ start: l, end: l});
   });
 */
+  $('#requires_shipping-field input').change( function() {
+    if ($(this).attr('checked')) {
+    } else {
+    }
+  });
   $('#payment_type-field select').change( function() {
     if ($(this).val() == 1) {
       $('.actions-bar #continue').html('<__trans phrase="Finish">');
@@ -60,6 +65,12 @@ $(document).ready( function() {
     <input type="hidden" name="__mode" value="edit_product" />
     <input type="hidden" name="blog_id" value="<$mt:var name="blog_id"$>" />
 
+    <ol id="steps" class="pkg">
+      <li class="general active">General Information</li>
+      <li class="pricing">Pricing and Tax</li>
+      <li class="shipping">Shipping Details</li>
+    </ol>
+
     <div id="page-1" class="page first">
       <mtapp:setting
           id="sku"
@@ -94,20 +105,6 @@ $(document).ready( function() {
         <textarea class="full-width" rows="3" name="description"><$mt:var name="description"$></textarea>
       </mtapp:setting>
       <mtapp:setting
-          id="list_price"
-          class="price-field"
-          label_class="top-label"
-          label="<__trans phrase="List Price">">
-        <input name="list_price" type="text" size="10" value="<$mt:var name="list_price" default="$"$>" />
-      </mtapp:setting>
-      <mtapp:setting
-          id="sale_price"
-          class="price-field"
-          label_class="top-label"
-          label="<__trans phrase="Sale Price">">
-        <input name="sale_price" type="text" size="10" value="<$mt:var name="sale_price" default="$"$>" />
-      </mtapp:setting>
-      <mtapp:setting
           id="inventory"
           label_class="top-label"
           label="<__trans phrase="Inventory">">
@@ -123,9 +120,29 @@ $(document).ready( function() {
           <option value="2"<mt:if name="payment_type" eq="2"> selected</mt:if>>Recurring Payment (a.k.a. subscription)</option>
         </select>
       </mtapp:setting>
+      <mtapp:setting
+          id="requires_shipping"
+          label_class="top-label"
+          show_label="0"
+          label="<__trans phrase="Requires Shipping">">
+        <label><input type="checkbox" name="requires_shipping" value="1" /> This item requires shipping</label>
+      </mtapp:setting>
     </div>
     <div id="page-2" class="page">
-      <h3>Subscription Options</h3>
+      <mtapp:setting
+          id="list_price"
+          class="price-field"
+          label_class="top-label"
+          label="<__trans phrase="List Price">">
+        <input name="list_price" type="text" size="10" value="<$mt:var name="list_price" default="$"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="sale_price"
+          class="price-field"
+          label_class="top-label"
+          label="<__trans phrase="Sale Price">">
+        <input name="sale_price" type="text" size="10" value="<$mt:var name="sale_price" default="$"$>" />
+      </mtapp:setting>
       <mtapp:setting
           id="period"
           label_class="top-label"

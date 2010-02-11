@@ -12,7 +12,7 @@ Net::PayPal::Button->mk_accessors(qw( sandbox_mode success_url notify_url cancel
                                       display_shipping_address display_comment image_url
                                       contact_email custom_field invoice tax customer items 
                                       openssl my_keyfile my_certfile paypal_certfile
-                                      button_text button_image
+                                      button_text button_image cert_id
 ));
 
 # We are exporting functions
@@ -31,6 +31,25 @@ $SIG{INT} = sub { die "Interrupted\n"; };
 $| = 1;    # autoflush
 
 my $USER_AGENT_NAME = "Net::PayPal::Button $VERSION";
+my $MAP = {
+    contact_email => "business",
+    image_url => "image_url",
+    success_url => "return",
+    cancel_url => "cancel_return",
+    notify_url => "notify_url",
+    return_method => "rm",
+    currency_code => "currency_code",
+    locale => "lc",
+    user_agent => "bn",
+    continue_button_text => "cbt",
+    display_shipping_address => "no_shipping",
+    display_comment => "no_note",
+    comment_header => "cn",
+    background_color => "cs",
+    tax => "tax",
+    custom_field => "custom",
+    invocie => "invoice"
+};
 
 sub new {
     my $class  = shift;
@@ -42,7 +61,7 @@ sub new {
                           display_shipping_address display_comment image_url
                           contact_email custom_field invoice tax customer
                           openssl my_keyfile my_certfile paypal_certfile
-                          button_text button_image
+                          button_text button_image cert_id user_agent
                          )) {
         if ( exists $params->{$prop} ) {
             $self->{$prop} = $params->{$prop};
@@ -52,6 +71,7 @@ sub new {
     $self->{cmd}           = '_xclick';
     $self->{locale}        ||= 'US';
     $self->{button_text}   ||= 'Buy Now';
+    $self->{user_agent}    ||= $USER_AGENT_NAME,
     $self->{currency_code} ||= 'USD';
     $self->{return_method} = lc($self->{'method'}) eq 'post' ? 2 : 1;
     $self->{comment_header} ||= 'Comments';
@@ -103,9 +123,7 @@ sub encrypt {
 sub as_html {
     my $self = shift;
     my @items = $self->items();
-    if ($self->encrypt) {
-        $self->{'cmd'} = '_s-xclick';
-    } elsif ($#items == 0) {
+    if ($#items == 0) {
         $self->{'cmd'} = '_xclick';
     } elsif ($#items > 0) {
         $self->{'cmd'} = '_xcart';
@@ -113,45 +131,50 @@ sub as_html {
         die "No items added to PayPal cart.";
     }
     my $url = $self->url;
-    my $html = <<ENDHTML;
-<form method="post" name="paypal_form" action="$url">
-<input type="hidden" name="cmd"           value="$self->{'cmd'}"> 
-ENDHTML
-    my $formparams = <<ENDPARAMS;
-<input type="hidden" name="business"      value="$self->{'contact_email'}"> 
-<input type="hidden" name="image_url"     value="$self->{'image_url'}">
-<input type="hidden" name="return"        value="$self->{'success_url'}">
-<input type="hidden" name="cancel_return" value="$self->{'cancel_url'}">
-<input type="hidden" name="notify_url"    value="$self->{'notify_url'}">
-<input type="hidden" name="rm"            value="$self->{'return_method'}">
-<input type="hidden" name="currency_code" value="$self->{'currency_code'}">
-<input type="hidden" name="lc"            value="$self->{'locale'}">
-<input type="hidden" name="bn"            value="$USER_AGENT_NAME">
-<input type="hidden" name="cbt"           value="$self->{'continue_button_text'}">
-<!-- Payment Page Information --> 
-<input type="hidden" name="no_shipping"   value="$self->{'display_shipping_address'}">
-<input type="hidden" name="no_note"       value="$self->{'display_comment'}">
-<input type="hidden" name="cn"            value="$self->{'comment_header'}"> 
-<input type="hidden" name="cs"            value="$self->{'background_color'}">
-<input type="hidden" name="tax"           value="$self->{'tax'}">
-<input type="hidden" name="custom"        value="$self->{'custom_field'}">
-<input type="hidden" name="invoice"       value="$self->{'invoice'}">
-ENDPARAMS
-    $formparams .= $self->customer->as_html();
-    if ($#items > 0) {
-        my $cnt = 0;
-        foreach my $i (@items) {
-            $formparams .= $i->as_html(++$cnt);
-        }
-    } elsif ($#items == 0) {
-        $formparams .= $items[0]->as_html();
-    } else {
-        # Die?
-    }
+    my $html;
     if ($self->encrypt) {
-        $html .= '<input type="hidden" name="encrypted" value="'.$self->_encrypt_params($formparams).'" />'."\n";
+	die "No certificate ID specified." unless $self->{'cert_id'} ne '';
+	my $params;
+	foreach my $key (sort keys %$MAP) {
+	    $params .= $MAP->{$key}.'='.$self->{$key}."\n"; 
+	}
+	$params .= $self->customer->as_params();
+	$params .= "cert_id=".$self->{'cert_id'}."\n";
+	$params .= "cmd=".$self->{'cmd'}."\n";
+	if ($#items > 0) {
+	    my $cnt = 0;
+	    foreach my $i (@items) {
+		$params .= $i->as_params(++$cnt);
+	    }
+	} elsif ($#items == 0) {
+	    $params .= $items[0]->as_params();
+	} else {
+	    # Die?
+	}
+	$html = <<ENDHTML;
+<form method="post" name="paypal_form" action="$url">
+<input type="hidden" name="cmd" value="_s-xclick" />
+ENDHTML
+        $html .= '<input type="hidden" name="encrypted" value="'.$self->_encrypt_params($params).'" />'."\n";
     } else {
-        $html .= $formparams;
+	$html = <<ENDHTML;
+<form method="post" name="paypal_form" action="$url">
+<input type="hidden" name="cmd" value="$self->{cmd}" />
+ENDHTML
+	foreach my $key (sort keys %$MAP) {
+	    $html .= '<input type="hidden" name="'.$MAP->{$key}.'" value="'.$self->{$key}.'" />'."\n"; 
+	}
+	$html .= $self->customer->as_html();
+	if ($#items > 0) {
+	    my $cnt = 0;
+	    foreach my $i (@items) {
+		$html .= $i->as_html(++$cnt);
+	    }
+	} elsif ($#items == 0) {
+	    $html .= $items[0]->as_html();
+	} else {
+	    # Die?
+	}
     }
     if ($self->button_image) {
         $html .= '<input type="image" src="'.$self->{button_image}.'" />'."\n";
@@ -190,7 +213,7 @@ sub _encrypt_params {
         $self->{openssl} . 
         " smime -encrypt -des3 -binary -outform pem " .
         $self->{paypal_certfile};
-    print STDERR $cmd;
+
     my $pid = IPC::Open2::open2(*READER, *WRITER, $cmd)
         || die "Could not run open2 on ".$self->{openssl}.": $!\n"; 
     # Write our parameters that we need to be encrypted to the openssl

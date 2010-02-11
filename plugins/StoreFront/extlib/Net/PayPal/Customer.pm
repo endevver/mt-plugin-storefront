@@ -18,6 +18,20 @@ $SIG{INT} = sub { die "Interrupted\n"; };
 
 $| = 1;    # autoflush
 
+my $MAP = {
+    firstname => 'first_name',
+    lastname  => 'last_name',
+    address1  => 'address1',
+    address2  => 'address2',
+    city      => 'city',
+    state     => 'state',
+    zip       => 'zip',
+    email     => 'email',
+    phone1    => 'night_phone_a',
+    phone2    => 'night_phone_b',
+    phone3    => 'night_phone_c'
+};
+
 sub new {
     my $class  = shift;
     my $params = shift;
@@ -35,23 +49,20 @@ sub new {
 
 sub as_html {
     my $self = shift;
-    my ($idx) = @_;
-    $idx .= '_' . $idx if $idx;
-    my $html = <<ENDHTML;
-<!-- Customer Information --> 
-<input type="hidden" name="first_name"    value="$self->{'firstname'}" /> 
-<input type="hidden" name="last_name"     value="$self->{'lastname'}" /> 
-<input type="hidden" name="address1"      value="$self->{'address1'}" /> 
-<input type="hidden" name="address2"      value="$self->{'address2'}" /> 
-<input type="hidden" name="city"          value="$self->{'city'}" /> 
-<input type="hidden" name="state"         value="$self->{'state'}" /> 
-<input type="hidden" name="zip"           value="$self->{'zip'}" /> 
-<input type="hidden" name="email"         value="$self->{'email'}" /> 
-<input type="hidden" name="night_phone_a" value="$self->{'phone1'}" /> 
-<input type="hidden" name="night_phone_b" value="$self->{'phone2'}" /> 
-<input type="hidden" name="night_phone_c" value="$self->{'phone3'}" />
-ENDHTML
+    my $html;
+    foreach my $key (sort keys %$MAP) {
+	$html .= '<input type="hidden" name="'.$MAP->{$key}.'" value="'.$self->{$key}.'" />'."\n"; 
+    }
     return $html;
+}
+
+sub as_params {
+    my $self = shift;
+    my $txt;
+    foreach my $key (sort keys %$MAP) {
+	$txt .= $MAP->{$key}.'='.$self->{$key}."\n"; 
+    }
+    return $txt;
 }
 
 1;

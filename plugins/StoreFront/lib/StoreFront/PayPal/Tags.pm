@@ -3,8 +3,23 @@ package StoreFront::PayPal::Tags;
 use strict;
 use Net::PayPal;
 
+sub _no_product_error {
+    my $ctx = shift;
+    my $tag_name = $ctx->stash('tag');
+    $tag_name = 'mt' . $tag_name unless $tag_name =~ m/^MT/i;
+    return $_[0]->error(MT->translate(
+        "You used an '[_1]' tag outside of the context of a product asset; " .
+        "perhaps you mistakenly placed it outside of an 'MTAssets type=\"product\"' container?", $tag_name
+				      ));
+}
+
 sub button {
     my ($ctx, $args, $cond) = @_;
+
+    my $asset = $ctx->stash('asset');
+    if ($asset && $asset->class_type ne 'product') {
+        return $ctx->_no_product_error();
+    }
 
     my $do_encrypt = $args->{encrypt} ? 1 : 0;
 
@@ -19,6 +34,8 @@ sub button {
 
     my $c = Net::PayPal::Customer->new({});
     my $b = Net::PayPal::Button->new({
+        openssl => $config->{openssl},
+        cert_id => $config->{my_cert_id},
         notify_url => $ctx->_hdlr_admin_cgi_path . MT->config->PayPalScript,
         sandbox_mode => $config->{sandbox_mode} ? 1 : 0,
         success_url => $config->{purchase_success},
@@ -39,16 +56,17 @@ sub button {
 #        tax => 2.99,
         customer => $c
     });
+    my $price = $asset->sale_price ? $asset->sale_price : $asset->list_price;
     $b->add_item(
         Net::PayPal::Item->new({
-            name => "Widget",
-            amount => "9.99",
-            quantity => "1",
-            item_number => "DBR-111",
-            edit_quantity => 1,
-            shipping_amount => "2.98",
-            shipping_per_item => "0.99",
-            handling_amount => "2.00"
+            name              => $asset->label,
+            amount            => $price,
+            quantity          => "1",
+            item_number       => $asset->sku_id,
+            edit_quantity     => 1,
+            shipping_amount   => "0.00",
+            shipping_per_item => "0.00",
+            handling_amount   => "0.00"
         })
     );
 
