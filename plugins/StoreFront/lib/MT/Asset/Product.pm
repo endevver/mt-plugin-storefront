@@ -28,6 +28,7 @@ __PACKAGE__->install_meta( { column_defs => {
                                  'duration' => 'integer',
                                  'duration_units' => 'string',
                                  'recur' => 'integer',
+                                 'recurrence_count' => 'integer'
                              }
                            } );
 

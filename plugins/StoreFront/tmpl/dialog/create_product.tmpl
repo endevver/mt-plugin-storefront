@@ -91,12 +91,6 @@ $(document).ready( function() {
     $(this).find('span').html('Add');
     $(this).find('.manage_inventory').show();
   });
-  var units = {
-    'days':'per day',
-    'weeks':'per week',
-    'months':'per month',
-    'years':'per year'
-  };
   var singular = {
     'days':'day',
     'weeks':'week',
@@ -115,6 +109,10 @@ $(document).ready( function() {
     var tu = $('select[name="trial_duration_units"]').val();
     if (td == 1) tu = singular[tu];
 
+    var rc = $('input[name="recurrence_count"]').val();
+    var ru = $('select[name="duration_units"]').val();
+    $('.recurrence_units').html( ( rc == 1 ? 'billing cycle' : 'billing cycles') );
+
     var tp = $('input[name="trial_price"]').val();
     tp = tp.replace(/^[\$]/,''); // trim the leading dollar sign
     tp = tp.replace(/\.0$/,''); // trim .00 if present
@@ -129,9 +127,9 @@ $(document).ready( function() {
       txt += 'Customer ';
     }
     txt += "will be billed " + $('#subscription_price-field input').val()
-      + " " + units[$('select[name="duration_units"]').val()];
+      + " per " + (d == 1 ? singular[$('select[name="duration_units"]').val()] : d + ' ' + $('select[name="duration_units"]').val());
     if ( $('input[name="recur"]').attr('checked') ) {
-      txt += ' for ' + d + ' ' + u;
+      txt += ' for ' + ( rc == 1 ? rc + ' ' + ru : rc + ' billing cycles (' + (rc * d) + ' ' + ru + ')' );
     } else {
       txt += ' forever';
     }
@@ -141,7 +139,7 @@ $(document).ready( function() {
   $('input.list_price').keyup( function() {
     $('#list_price_value').val( $(this).val() );
   });
-  $('input[name="duration"],input[name="sub_price"],input[name="trial_price"],input[name="trial_duration"]').keyup( function() {
+  $('input[name="recurrence_count"],input[name="duration"],input[name="sub_price"],input[name="trial_price"],input[name="trial_duration"]').keyup( function() {
     writeSubDetails();
   });
   $('input[name="offer_trial"],input[name="recur"],select[name="duration_units"]').change( function() {
@@ -286,7 +284,8 @@ $(document).ready( function() {
           label_class="top-label"
           label="<__trans phrase="Price">">
         <input class="list_price" type="text" name="sub_price" size="10" value="<$mt:var name="list_price" default="$0.00"$>" />
-          per
+          every
+        <input type="text" name="duration" size="5" value="<$mt:var name="duration" default="1"$>" />
         <select name="duration_units">
 <mt:loop name="sub_dur_loop">
           <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
@@ -300,8 +299,8 @@ $(document).ready( function() {
           label="<__trans phrase="Recurrence">">
         <input type="checkbox" name="recur" value="1" <mt:if name="recur" eq="1">checked </mt:if>/> 
           Automatically stop billing customer after 
-          <input type="text" size="4" name="duration" value="<$mt:var name="duration" default="0"$>" />
-          <span class="duration_units"><$mt:var name="duration_units"$></span>.
+          <input type="text" size="2" name="recurrence_count" value="<$mt:var name="recurrence_count" default="1"$>" />
+          <span class="recurrence_units">billing cycles</span>.
       </mtapp:setting>
       <mtapp:setting
           id="trial"

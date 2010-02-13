@@ -124,7 +124,11 @@ sub as_html {
     my $self = shift;
     my @items = $self->items();
     if ($#items == 0) {
-        $self->{'cmd'} = '_xclick';
+        if ( $items[0]->isa('Net::PayPal::Subscription') ) {
+            $self->{'cmd'} = '_xclick-subscriptions';
+        } else {
+            $self->{'cmd'} = '_xclick';
+        } 
     } elsif ($#items > 0) {
         $self->{'cmd'} = '_xcart';
     } else {

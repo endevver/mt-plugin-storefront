@@ -13,6 +13,19 @@ sub _no_product_error {
 				      ));
 }
 
+sub _map_units {
+    my ($u) = @_;
+    if (lc($u) eq 'days') {
+        return 'D';
+    } elsif (lc($u) eq 'years') {
+        return 'Y';
+    } elsif (lc($u) eq 'months') {
+        return 'M';
+    } elsif (lc($u) eq 'weeks') {
+        return 'W';
+    }
+}
+
 sub button {
     my ($ctx, $args, $cond) = @_;
 
@@ -76,17 +89,22 @@ sub button {
         $options = {
             name               => $asset->label,
             price              => $price,
-            period             => $asset->period,
-            period_units       => $asset->period_units,
-            recurring_payments => $asset->recurrence == -1 ? 1 : 0,
-            recurrence_count   => $asset->recurrence,
-            retry_on_error     => $asset->retry_on_error,
-            modify_rules       => $asset->modify_rules
+            duration           => $asset->duration,
+            duration_units     => _map_units($asset->duration_units),
+            retry_on_error     => 1, #$asset->retry_on_error,
+            modify_rules       => 2
         };
+        if ($asset->recur) {
+            $options->{recurring_payments} = 1;
+            $options->{recurrence_count} = $asset->recurrence_count;
+        } else {
+            $options->{recurring_payments} = 1;
+            $options->{recurrence_count} = 0;
+        }
         if ($asset->offer_trial) {
-            $options->{trial_price} = $asset->trial_price;
-            $options->{trial_period} = $asset->trial_period;
-            $options->{trial_period_units} = $asset->trial_period_units;
+            $options->{trial_price}          = $asset->trial_price;
+            $options->{trial_duration}       = $asset->trial_duration;
+            $options->{trial_duration_units} = _map_units($asset->trial_duration_units);
         }
     }
     if ($asset->requires_shipping) {

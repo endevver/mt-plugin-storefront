@@ -53,7 +53,7 @@ sub create_product {
         push @sub_dur_loop, {
             label => $v,
             value => $unit,
-            selected => $product->duration_units eq $v ? 1 : 0
+            selected => $product->duration_units eq $unit ? 1 : 0
         };
     }
     
@@ -71,6 +71,7 @@ sub create_product {
     }
     foreach ( qw( description sku_id payment_type requires_shipping inventory_type inventory
                   limit_per_order weight weight_unit offer_trial trial_duration duration recur
+                  recurrence_count
                   ) ) {
         $tmpl->param( $_ => $product->$_() );
     }
@@ -101,7 +102,7 @@ sub save_product {
                        inventory_type payment_type tax_rate weight weight_unit 
                        requires_shipping limit_per_order requires_shipping shipping_cost 
                        duration duration_units trial_duration trial_duration_units
-                       trial_price offer_trial recur
+                       trial_price offer_trial recur recurrence_count
                      )) {
         my $v = $q->param($f);
         $v =~ s/^\$// if ($f =~ /(price|cost)/);
