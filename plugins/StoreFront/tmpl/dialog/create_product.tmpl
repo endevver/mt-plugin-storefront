@@ -1,4 +1,5 @@
-<mt:setvarblock name="page_title"><__trans phrase="Create Product"></mt:setvarblock>
+<mt:setvarblock name="page_title"><mt:if name="id"><__trans phrase="Edit Product"><mt:else><__trans phrase="Create Product"></mt:if></mt:setvarblock>
+<mt:setvarblock name="screen_id"><mt:if name="id">edit-<mt:if name="payment_type" eq="1">one-time<mt:else>subscription</mt:if><mt:else>create</mt:if></mt:setvarblock>
 <mt:setvarblock name="html_head" append="1">
     <link rel="stylesheet" href="<mt:var name="static_uri">plugins/StoreFront/app.css" type="text/css" />
     <script type="text/javascript" src="<mt:var name="static_uri">js/dialog.js"></script>
@@ -12,44 +13,141 @@
     <!--
 $(document).ready( function() {
   var page = 1;
-/*
+<mt:ignore>
   $('.price-field input').focus( function() {
     var l = $(this).val().length;
     $(this).caret({ start: l, end: l});
   });
-*/
-  $('#requires_shipping-field input').change( function() {
+</mt:ignore>
+  $('#options-field input[name="requires_shipping"]').change( function() {
     if ($(this).attr('checked')) {
+      $('#steps .shipping').show();
     } else {
+      $('#steps .shipping').hide();
     }
   });
   $('#payment_type-field select').change( function() {
     if ($(this).val() == 1) {
-      $('.actions-bar #continue').html('<__trans phrase="Finish">');
+      $('#subscription').hide();
+      $('#one-time').show();
+      $('#steps li.pricing label').html('Pricing & Taxes');
     } else {
-      $('.actions-bar #continue').html('<__trans phrase="Continue">');
+      $('#subscription').show();
+      $('#one-time').hide();
+      $('#steps li.pricing label').html('Subscription Options');
+    }
+  });
+  function setPage(p) {
+    page = p;
+    $('#steps li').removeClass('active');
+    $('.page').hide();
+    $('#page-' + p).show();
+    var step = $('#steps li.page-' + p);
+    step.addClass('active');
+    var next = step.next(':visible');
+    if (next.html()) {
+        $('#create #continue').html('Continue');      
+    } else {
+        $('#create #continue').html('Finish');      
+    }
+  }
+  $('#edit-subscription #steps li,#edit-one-time #steps li').click( function() {
+    var p = $(this).find('span').html();
+    if (p != page) {
+      setPage(p);
     }
   });
   $('.actions-bar #continue').click( function() {
-    if ( page == 1 && $('#payment_type-field select').val() == 2 ) {
-      page++;
-      $('.page').hide();
-      $('#page-' + page).show();
-      return;
-    }
-    $('#edit_product').ajaxSubmit({
-      type: 'post',
-      success: function() {
-        alert("Success!");
-        closeDialog();          
+    var s = $('#steps').find('li.active');
+    var next = s.next(':visible');
+    if (next.html() && $(this).html().trim() != 'Save') {
+      setPage( page + 1 );
+    } else {
+      $('#edit_product').ajaxSubmit({
+        type: 'post',
+        success: function() {
+          alert("Success!");
+          closeDialog();          
         }
-    });
+      });
+    }
   });
   $('.actions-bar #back').click( function() {
-      page--;
-      $('.page').hide();
-      $('#page-' + page).show();
+    var s = $('#steps').find('li.active');
+    var prev = s.prev(':visible');
+    if (prev.html()) {
+      setPage( page - 1 );
+    }
   });
+  $('#limited a').click( function() {
+    if ($(this).hasClass('add')) {
+      $(this).parent().find('span.label').html('Add');
+    } else {
+      $(this).parent().find('span.label').html('Subtract');
+    }
+    $('.manage_inventory').show();
+  });
+  $('#limited a.add').click( function() {
+    $(this).find('span').html('Add');
+    $(this).find('.manage_inventory').show();
+  });
+  var units = {
+    'days':'per day',
+    'weeks':'per week',
+    'months':'per month',
+    'years':'per year'
+  };
+  var singular = {
+    'days':'day',
+    'weeks':'week',
+    'months':'month',
+    'years':'year'
+  };
+  function writeSubDetails() {
+    var txt = '';
+
+    var d = $('input[name="duration"]').val();
+    var u = $('select[name="duration_units"]').val();
+    if (d == 1) u = singular[u];
+    $('.duration_units').html( u );
+
+    var td = $('input[name="trial_duration"]').val();
+    var tu = $('select[name="trial_duration_units"]').val();
+    if (td == 1) tu = singular[tu];
+
+    var tp = $('input[name="trial_price"]').val();
+    tp = tp.replace(/^[\$]/,''); // trim the leading dollar sign
+    tp = tp.replace(/\.0$/,''); // trim .00 if present
+
+    if (tp == '') tp = 0;
+    if ( $('input[name="offer_trial"]').attr('checked') && td > 0 ) {
+      txt += 'Customer will be allowed to trial the subscription for ' + td + ' ' + tu;
+      if (tp == 0) txt += " for free ";
+      else txt+= " at a cost of " + $('input[name="trial_price"]').val();
+      txt += " and then customer ";
+    } else {
+      txt += 'Customer ';
+    }
+    txt += "will be billed " + $('#subscription_price-field input').val()
+      + " " + units[$('select[name="duration_units"]').val()];
+    if ( $('input[name="recur"]').attr('checked') ) {
+      txt += ' for ' + d + ' ' + u;
+    } else {
+      txt += ' forever';
+    }
+    txt += ', or until they cancel.';
+    $('#details-field p').html( txt );
+  }
+  $('input.list_price').keyup( function() {
+    $('#list_price_value').val( $(this).val() );
+  });
+  $('input[name="duration"],input[name="sub_price"],input[name="trial_price"],input[name="trial_duration"]').keyup( function() {
+    writeSubDetails();
+  });
+  $('input[name="offer_trial"],input[name="recur"],select[name="duration_units"]').change( function() {
+    writeSubDetails();
+  });
+  <mt:if name="payment_type" eq="2">$('#subscription').show();writeSubDetails();</mt:if>
 });
 
     // -->
@@ -62,34 +160,20 @@ $(document).ready( function() {
         name="edit_product" 
         method="post" 
         action="<$mt:var name="script_url"$>">
-    <input type="hidden" name="__mode" value="edit_product" />
+    <input type="hidden" name="__mode" value="save_product" />
     <input type="hidden" name="blog_id" value="<$mt:var name="blog_id"$>" />
+<mt:if name="id">
+    <input type="hidden" name="id" value="<$mt:var name="id"$>" />
+</mt:if>
+    <input id="list_price_value" type="hidden" name="list_price" value="<$mt:var name="list_price"$>" />
 
     <ol id="steps" class="pkg">
-      <li class="general active">General Information</li>
-      <li class="pricing">Pricing and Tax</li>
-      <li class="shipping">Shipping Details</li>
+      <li class="page-1 general active"><span>1</span> <label>General Information</label></li>
+      <li class="page-2 pricing"><span>2</span> <label><mt:if name="payment_type" eq="1">Pricing &amp; Taxes<mt:else>Subscription Options</mt:if></label></li>
+      <li class="page-3 shipping"<mt:unless name="requires_shipping"> style="display:none;"</mt:unless>><span>3</span> <label>Shipping Details</label></li>
     </ol>
 
-    <div id="page-1" class="page first">
-      <mtapp:setting
-          id="sku"
-          label_class="top-label"
-          label="<__trans phrase="SKU ID">"
-          hint="Enter a personal identifier for this product."
-          show_hint="1">
-        <input name="sku_id" type="text" size="30" value="<$mt:var name="sku"$>" />
-      </mtapp:setting>
-      <mtapp:setting
-          id="status"
-          label_class="top-label"
-          label="<__trans phrase="Status">">
-        <select name="status">
-<mt:loop name="status_loop">
-          <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
-</mt:loop>
-        </select>
-      </mtapp:setting>
+    <fieldset id="page-1" class="general page first">
       <mtapp:setting
           id="name"
           label_class="top-label"
@@ -105,74 +189,163 @@ $(document).ready( function() {
         <textarea class="full-width" rows="3" name="description"><$mt:var name="description"$></textarea>
       </mtapp:setting>
       <mtapp:setting
+          id="sku"
+          label_class="top-label"
+          label="<__trans phrase="SKU ID">"
+          hint="A custom identifier for this product."
+          show_hint="1">
+        <input name="sku_id" type="text" size="25" value="<$mt:var name="sku_id"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="status"
+          label_class="top-label"
+          label="<__trans phrase="Status">">
+        <select name="status">
+<mt:loop name="status_loop">
+          <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
+</mt:loop>
+        </select>
+      </mtapp:setting>
+      <mtapp:setting
           id="inventory"
           label_class="top-label"
           label="<__trans phrase="Inventory">">
-        <label id="unlimitted"><input type="radio" name="inventory_type" value="0" <mt:if name="inventory_type" eq="1">checked </mt:if>/> Unlimitted</label>
-        <label id="limited"><input type="radio" name="inventory_type" value="1" <mt:if name="inventory_type" eq="2">checked </mt:if>/> <input name="inventory" type="text" size="10" value="<$mt:var name="inventory"$>" /> units</label>
+        <label id="unlimitted"><input type="radio" name="inventory_type" value="0" <mt:if name="inventory_type" eq="0">checked </mt:if>/> Unlimitted</label>
+        <label id="limited"><input type="radio" name="inventory_type" value="1" <mt:if name="inventory_type" eq="1">checked </mt:if>/>
+<mt:if name="id">
+        <span class="inventory_count"><$mt:var name="inventory"$></span> units
+        <a href="javascript:void(0)" class="add">+</a> <a href="javascript:void(0)" class="subtract">-</a>
+        <div class="manage_inventory">
+          <span class="label">Add</span>: <input type="text" size="2" /> units <button>Go</button>
+        </div>
+<mt:else>
+        <input name="inventory" type="text" size="5" value="<$mt:var name="inventory"$>" /> units
+</mt:if>
+        </label>
       </mtapp:setting>
       <mtapp:setting
           id="payment_type"
           label_class="top-label"
           label="<__trans phrase="Payment Type">">
+<mt:if name="id">
+        <input type="hidden" name="payment_type" value="<$mt:var name="payment_type"$>" />
+        <mt:if name="payment_type" eq="1">One Time Payment</mt:if>
+        <mt:if name="payment_type" eq="2">Recurring Payment (a.k.a. subscription)</mt:if>
+<mt:else>
         <select name="payment_type">
           <option value="1"<mt:if name="payment_type" eq="1"> selected</mt:if>>One Time Payment</option>
           <option value="2"<mt:if name="payment_type" eq="2"> selected</mt:if>>Recurring Payment (a.k.a. subscription)</option>
         </select>
+</mt:if>
       </mtapp:setting>
       <mtapp:setting
-          id="requires_shipping"
+          id="options"
           label_class="top-label"
-          show_label="0"
-          label="<__trans phrase="Requires Shipping">">
-        <label><input type="checkbox" name="requires_shipping" value="1" /> This item requires shipping</label>
+          show_label="1"
+          label="<__trans phrase="Options">">
+        <ul>
+        <li><label><input type="checkbox" name="requires_shipping" value="1"<mt:if name="requires_shipping" eq="1"> checked</mt:if> /> This item requires shipping</label></li>
+        </ul>
       </mtapp:setting>
-    </div>
-    <div id="page-2" class="page">
+    </fieldset>
+    <fieldset id="page-2" class="page pricing">
+      <fieldset id="one-time" class="payment_type_1">
       <mtapp:setting
           id="list_price"
           class="price-field"
           label_class="top-label"
           label="<__trans phrase="List Price">">
-        <input name="list_price" type="text" size="10" value="<$mt:var name="list_price" default="$"$>" />
+        <input class="list_price" name="prod_price" type="text" size="10" value="<$mt:var name="list_price" default="$0.00"$>" />
       </mtapp:setting>
       <mtapp:setting
           id="sale_price"
           class="price-field"
           label_class="top-label"
           label="<__trans phrase="Sale Price">">
-        <input name="sale_price" type="text" size="10" value="<$mt:var name="sale_price" default="$"$>" />
+        <input name="sale_price" type="text" size="10" value="<$mt:var name="sale_price" default="$0.00"$>" />
       </mtapp:setting>
       <mtapp:setting
-          id="period"
+          id="tax_rate"
           label_class="top-label"
-          label="<__trans phrase="Period">"
-          hint="The frequency to bill the customer."
-          show_hint="1">
-        <select name="period">
-<mt:loop name="period_loop">
+          hint="e.g. 8.5%"
+          label="<__trans phrase="Tax Rate">">
+        <input name="tax_rate" type="text" size="10" value="<$mt:var name="tax_rate" default="0%"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="limit"
+          label_class="top-label"
+          show_label="0"
+          label="<__trans phrase="Limit">">
+        <label><input type="checkbox" name="limit_per_order" value="1"<mt:if name="limit_per_order" eq="1"> checked</mt:if> /> Limit customer to one item per order</label>
+      </mtapp:setting>
+      </fieldset>
+      <fieldset id="subscription" class="payment_type_2 subscription">
+      <mtapp:setting
+          id="subscription_price"
+          class="subscription"
+          label_class="top-label"
+          label="<__trans phrase="Price">">
+        <input class="list_price" type="text" name="sub_price" size="10" value="<$mt:var name="list_price" default="$0.00"$>" />
+          per
+        <select name="duration_units">
+<mt:loop name="sub_dur_loop">
           <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
 </mt:loop>
         </select>
       </mtapp:setting>
       <mtapp:setting
-          id="start_date"
+          id="recurrence"
+          class="subscription"
           label_class="top-label"
-          label="<__trans phrase="Billing Start">"
-          hint="How many days to wait until you start billing the customer."
-          show_hint="1">
-        <input name="start_date" type="text" size="10" value="<$mt:var name="start_date"$>" default="0" /> days
+          label="<__trans phrase="Recurrence">">
+        <input type="checkbox" name="recur" value="1" <mt:if name="recur" eq="1">checked </mt:if>/> 
+          Automatically stop billing customer after 
+          <input type="text" size="4" name="duration" value="<$mt:var name="duration" default="0"$>" />
+          <span class="duration_units"><$mt:var name="duration_units"$></span>.
       </mtapp:setting>
       <mtapp:setting
-          id="recurrence"
+          id="trial"
+          class="subscription"
           label_class="top-label"
-          label="<__trans phrase="Recurrence">"
-          hint="How many times this customer will be billed prior to expiration."
-          show_hint="1">
-        <label id="forever"><input type="radio" name="recurrence_type" value="0" <mt:if name="recurrence" eq="0">checked </mt:if>/> Forever</label>
-        <label><input type="radio" name="recurrence_type" value="1" <mt:if name="recurrence" gt="0">checked </mt:if>/> <input name="recurrence" type="text" size="5" value="<$mt:var name="recurrence"$>" /> times</label>
+          label="<__trans phrase="Trial">">
+        <input type="checkbox" name="offer_trial" value="1"<mt:if name="offer_trial"> checked</mt:if> /> Offer trial subscription
+          at a rate of 
+          <input type="text" name="trial_price" size="10" value="<$mt:var name="trial_price" default="$0.00"$>" />
+          that will last 
+          <input type="text" name="trial_duration" size="4" value="<$mt:var name="trial_duration" default="0"$>" />
+          <select name="trial_duration_units">
+<mt:loop name="trial_dur_loop">
+            <option value="<$mt:var name="value"$>"<mt:if name="selected"> selected</mt:if>><$mt:var name="label"$></option>
+</mt:loop>
+          </select>
       </mtapp:setting>
-    </div>
+      <mtapp:setting
+          id="details"
+          class="subscription"
+          label_class="top-label"
+          label="<__trans phrase="Details">">
+        <p></p>
+      </mtapp:setting>
+      </fieldset>
+    </fieldset>
+    <fieldset id="page-3" class="page shipping">
+      <mtapp:setting
+          id="shipping_cost"
+          label_class="top-label"
+          label="<__trans phrase="Shipping Cost">">
+        <input name="shipping_cost" type="text" size="10" value="<$mt:var name="shipping_cost" default="$"$>" />
+      </mtapp:setting>
+      <mtapp:setting
+          id="weight"
+          label_class="top-label"
+          label="<__trans phrase="Weight">">
+        <input name="weight" type="text" size="10" value="<$mt:var name="weight"$>" />
+        <select name="weight_unit">
+          <option<mt:if name="weight_unit" eq="lbs"> selected</mt:if>>lbs</option>
+          <option<mt:if name="weight_unit" eq="kgs"> selected</mt:if>>kgs</option>
+        </select>
+      </mtapp:setting>
+    </fieldset>
 
     <div class="actions-bar">
       <div class="actions-bar-inner pkg actions">
@@ -183,7 +356,8 @@ $(document).ready( function() {
              accesskey="s"
              title="<__trans phrase="Continue (c)">"
              class="primary-button disabled-button">
-          <mt:if name="payment_type" eq="2"><__trans phrase="Continue"><mt:else><__trans phrase="Finish"></mt:if></button>
+          <mt:if name="id"><__trans phrase="Save"><mt:else><__trans phrase="Continue"></mt:if></button>
+<mt:unless name="id">
         <button
              id="back"
              onclick="javascript: void(0)"
@@ -191,6 +365,7 @@ $(document).ready( function() {
              class="back"
              title="<__trans phrase="Back">">
           <__trans phrase="Back"></button>
+</mt:unless>
         <button
              id="close"
              onclick="closeDialog(); return false"

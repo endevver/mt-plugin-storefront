@@ -4,18 +4,31 @@ use strict;
 use base qw( MT::Asset );
 
 __PACKAGE__->install_properties( { class_type => 'product', } );
-__PACKAGE__->install_meta( { columns => [ 
-                                 'sku_id',
-                                 'list_price',
-                                 'sale_price',
-                                 'inventory_type',
-                                 'inventory',
-                                 'payment_type',
-                                 'status',
-                                 'period',
-                                 'start_date',
-                                 'recurrence',
-                                 ] 
+__PACKAGE__->install_meta( { column_defs => { 
+                                 'sku_id' => 'string',
+                                 'inventory_type' => 'integer',
+                                 'inventory' => 'integer',
+                                 'payment_type' => 'integer',
+                                 'status' => 'string',
+                                 # Shipping Options
+                                 'requires_shipping' => 'integer',
+                                 'weight' => 'float',
+                                 'weight_unit' => 'string',
+                                 'shipping_cost' => 'float',
+                                 # One Time Purchase Options
+                                 'list_price' => 'float',
+                                 'sale_price' => 'float',
+                                 'tax_rate' => 'float',
+                                 'limit_per_order' => 'integer',
+                                 # Subscription Options 
+                                 'offer_trial' => 'integer',
+                                 'trial_price' => 'float',
+                                 'trial_duration' => 'integer',
+                                 'trial_duration_units' => 'string',
+                                 'duration' => 'integer',
+                                 'duration_units' => 'string',
+                                 'recur' => 'integer',
+                             }
                            } );
 
 sub class_label { MT->translate('Product'); }
@@ -28,8 +41,8 @@ sub has_thumbnail { 0; }
 
 # CONSTANTS
 # Inventory Type
-# 1 - unlimitted
-# 2 - limitted
+# 0 - unlimitted
+# 1 - limitted
 # Payment Type
 # 1 - one time
 # 2 - recurring

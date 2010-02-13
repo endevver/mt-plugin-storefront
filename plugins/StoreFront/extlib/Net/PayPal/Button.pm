@@ -136,7 +136,7 @@ sub as_html {
 	die "No certificate ID specified." unless $self->{'cert_id'} ne '';
 	my $params;
 	foreach my $key (sort keys %$MAP) {
-	    $params .= $MAP->{$key}.'='.$self->{$key}."\n"; 
+	    $params .= $MAP->{$key}.'='.$self->{$key}."\n" if $self->{$key}; 
 	}
 	$params .= $self->customer->as_params();
 	$params .= "cert_id=".$self->{'cert_id'}."\n";
@@ -162,7 +162,7 @@ ENDHTML
 <input type="hidden" name="cmd" value="$self->{cmd}" />
 ENDHTML
 	foreach my $key (sort keys %$MAP) {
-	    $html .= '<input type="hidden" name="'.$MAP->{$key}.'" value="'.$self->{$key}.'" />'."\n"; 
+	    $html .= '<input type="hidden" name="'.$MAP->{$key}.'" value="'.$self->{$key}.'" />'."\n" if $self->{$key}; 
 	}
 	$html .= $self->customer->as_html();
 	if ($#items > 0) {

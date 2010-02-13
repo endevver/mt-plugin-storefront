@@ -33,7 +33,7 @@ sub button {
     $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but3.gif' if ($config->{buynow_button} eq 'Buy Now 2');
 
     my $c = Net::PayPal::Customer->new({});
-    my $b = Net::PayPal::Button->new({
+    my $options = {
         openssl => $config->{openssl},
         cert_id => $config->{my_cert_id},
         notify_url => $ctx->_hdlr_admin_cgi_path . MT->config->PayPalScript,
@@ -44,31 +44,60 @@ sub button {
         currency_code => $config->{paypal_currency},
         method => 'post',
         locale => 'US',
+        button_image => $button,
+        customer => $c,
         display_shipping_address => 0,
+#        background_color => 'white',
 #        custom_field => 'account_id:2',
 #        comment_header => 0,
 #        continue_button_text => 'Continue',
-#        background_color => 'white',
 #        display_comment => 1,
 #        image_url => $config->{purchase_cancel},
-        button_image => $button,
 #        invoice => 1,
-#        tax => 2.99,
-        customer => $c
-    });
+    };
+    $options->{display_shipping_address} = 1 if ($asset->requires_shipping);
+
+    my $b = Net::PayPal::Button->new( $options );
+    my $item_class;
     my $price = $asset->sale_price ? $asset->sale_price : $asset->list_price;
-    $b->add_item(
-        Net::PayPal::Item->new({
+    if ($asset->payment_type == 1) { # One Time
+        $item_class = 'Net::PayPal::Item';
+        $options = {
             name              => $asset->label,
             amount            => $price,
-            quantity          => "1",
+            quantity          => 1,
             item_number       => $asset->sku_id,
-            edit_quantity     => 1,
-            shipping_amount   => "0.00",
-            shipping_per_item => "0.00",
-            handling_amount   => "0.00"
-        })
-    );
+            edit_quantity     => 0
+        };
+        $options->{edit_quantity} = 1 if $asset->limit_per_order;
+        $options->{tax_rate} = $asset->tax_rate if $asset->tax_rate > 0;
+    } else {
+        $item_class = 'Net::PayPal::Subscription';
+        $options = {
+            name               => $asset->label,
+            price              => $price,
+            period             => $asset->period,
+            period_units       => $asset->period_units,
+            recurring_payments => $asset->recurrence == -1 ? 1 : 0,
+            recurrence_count   => $asset->recurrence,
+            retry_on_error     => $asset->retry_on_error,
+            modify_rules       => $asset->modify_rules
+        };
+        if ($asset->offer_trial) {
+            $options->{trial_price} = $asset->trial_price;
+            $options->{trial_period} = $asset->trial_period;
+            $options->{trial_period_units} = $asset->trial_period_units;
+        }
+    }
+    if ($asset->requires_shipping) {
+        $options->{shipping_amount} = $asset->shipping_cost;
+        $options->{weight} = $asset->weight;
+        $options->{weight_unit} = $asset->weight_unit;
+#        $options->{shipping_per_item} = "0.00";
+#        $options->{handling_amount} = "0.00";
+    }
+    my $item = $item_class->new( $options );
+    $b->add_item( $item );
 
     my $key = MT->model('asset')->load( $config->{my_keyfile} );
     my $cert = MT->model('asset')->load( $config->{my_certfile} );

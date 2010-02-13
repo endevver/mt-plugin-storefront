@@ -2,8 +2,8 @@ package Net::PayPal::Item;
 
 use vars qw($VERSION @EXPORT_OK %EXPORT_TAGS);
 
-use base qw(Class::Accessor);
-Net::PayPal::Item->mk_accessors(qw(apikey url cache));
+#use base qw(Class::Accessor);
+#Net::PayPal::Item->mk_accessors(qw(apikey url cache));
 
 # We are exporting functions
 use base qw/Exporter/;
@@ -26,7 +26,10 @@ my $MAP = {
     edit_quantity => 'undefined_quantity',
     shipping_amount => 'shipping',
     shipping_per_item => 'shipping2',
-    handling_amount => 'handling'
+    handling_amount => 'handling',
+    tax_rate => 'tax_rate',
+    weight => 'weight',
+    weight_unit => 'weight_unit'
 };
 
 sub new {
@@ -34,7 +37,8 @@ sub new {
     my $params = shift;
     my $self   = {};
     foreach my $prop (qw( name amount quantity item_number edit_quantity 
-                          shipping_amount shipping_per_item handling_amount )) {
+                          shipping_amount shipping_per_item handling_amount 
+                          tax_rate weight weight_unit )) {
         if ( exists $params->{$prop} ) {
             $self->{$prop} = $params->{$prop};
         }
@@ -65,7 +69,7 @@ sub as_html {
     $idx = '_' . $idx unless $idx eq '';
     my $html;
     foreach my $key (sort keys %$MAP) {
-	$html .= '<input type="hidden" name="'.$MAP->{$key}.$idx.'" value="'.$self->{$key}.'" />'."\n"; 
+        $html .= '<input type="hidden" name="'.$MAP->{$key}.$idx.'" value="'.$self->{$key}.'" />'."\n" if $self->{$key}; 
     }
     my @options = @{$self->options};
     my $i = 0;
@@ -84,7 +88,7 @@ sub as_params {
    $idx = '_' . $idx unless $idx eq '';
    my $txt;
    foreach my $key (sort keys %$MAP) {
-       $txt .= $MAP->{$key}.$idx.'='.$self->{$key}."\n"; 
+       $txt .= $MAP->{$key}.$idx.'='.$self->{$key}."\n" if $self->{key};
    }
    my @options = @{$self->options};
    my $i = 0;

@@ -12,6 +12,11 @@
 </mt:ignore>
 <mt:setvarblock name="related_content">
     <mt:include name="include/display_options.tmpl" />
+    <mtapp:widget
+        id="quickfilters"
+        label="<__trans phrase="Quickfilters">">
+        <$mtapp:ListFilters$>
+    </mtapp:widget>
     <mtapp:PageActions />
 </mt:setvarblock>
 <mt:setvarblock name="html_head" append="1">
@@ -29,36 +34,23 @@
     </script> 
 </mt:setvarblock>
 <mt:setvarblock name="system_msg">
-    <mt:if name="uri_reset">
+    <mt:if name="saved_deleted">
         <mtapp:statusmsg
             id="message"
             class="success">
-            <__trans phrase="The URI you selected has been reset.">
-        </mtapp:statusmsg>
-    </mt:if>
-    <mt:if name="map_saved">
-        <mtapp:statusmsg
-            id="message"
-            class="success">
-            <__trans phrase="The selected URI has been successfully mapped to a new URL.">
+            <__trans phrase="The product(s) you selected has been deleted.">
         </mtapp:statusmsg>
     </mt:if>
 </mt:setvarblock>
-<mt:ignore>
+
 <mt:setvarblock name="action_buttons">
     <a href="javascript:void(0)"
-        onclick="if (confirm('Reset selected 404s?')) doForMarkedInThisWindow(getByID('cleansweep.log-listing-form'), '<__trans phrase="404">', '<__trans phrase="404s">', 'id', 'itemset_reset_404s'); return false"
-        accesskey="r"
-        title="<__trans phrase="Reset selected 404s (r)">"
-        ><__trans phrase="Reset "></a>
-    <a href="javascript:void(0)"
-        onclick="if (confirm('Clear selected 404s?')) doForMarkedInThisWindow(getByID('cleansweep.log-listing-form'), '<__trans phrase="404">', '<__trans phrase="404s">', 'id', 'itemset_delete_404s'); return false"
-        accesskey="d"
-        title="<__trans phrase="Clear selected 404s (h)">"
-        ><__trans phrase="Clear"></a>
+       onclick="doRemoveItems(getByID('<$mt:var name="object_type"$>-listing-form'), '<mt:var name="object_label" lower_case="1" escape="js">', '<mt:var name="object_label_plural" lower_case="1" escape="js">'); return false;"
+       accesskey="x" title="<$mt:var name="delete_button_title"$>"><__trans phrase="Delete"></a>
 </mt:setvarblock>
-</mt:ignore>
+
 <$mt:include name="include/header.tmpl"$>
+
 <mtapp:listing type="asset.product">
     <mt:if name="__first__">
     <thead>
@@ -76,11 +68,12 @@
     </mt:if>
         <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if>">
             <td class="cb"><input type="checkbox" name="id" value="<mt:var name="id">" class="select" /></td>
-            <td><$mt:var name="name"$></td>
+            <td><a href="javascript:void(0)" onclick="openDialog(null,'create_product','id=<$mt:var name="id"$>&blog_id=<$mt:var name="blog_id"$>');return false;"><$mt:var name="name"$></a></td>
             <td><$mt:var name="type"$></td>
             <td>
               <mt:if name="sale_price" lt="$list_price">
-                <span class="on_sale"><$mt:var name="list_price_f"$></span> <$mt:var name="sale_price_f"$>
+                <$mt:var name="sale_price_f"$>
+                <img src="<$mt:StaticWebPath$>plugins/StoreFront/sale_bug.gif" />
               <mt:else>
                 <$mt:var name="list_price_f"$>
               </mt:if>

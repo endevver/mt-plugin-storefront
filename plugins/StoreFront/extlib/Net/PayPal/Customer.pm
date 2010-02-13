@@ -51,7 +51,7 @@ sub as_html {
     my $self = shift;
     my $html;
     foreach my $key (sort keys %$MAP) {
-	$html .= '<input type="hidden" name="'.$MAP->{$key}.'" value="'.$self->{$key}.'" />'."\n"; 
+	$html .= '<input type="hidden" name="'.$MAP->{$key}.'" value="'.$self->{$key}.'" />'."\n" if $self->{$key}; 
     }
     return $html;
 }
@@ -60,7 +60,7 @@ sub as_params {
     my $self = shift;
     my $txt;
     foreach my $key (sort keys %$MAP) {
-	$txt .= $MAP->{$key}.'='.$self->{$key}."\n"; 
+	$txt .= $MAP->{$key}.'='.$self->{$key}."\n" if $self->{$key}; 
     }
     return $txt;
 }
