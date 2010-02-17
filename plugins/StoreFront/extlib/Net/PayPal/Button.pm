@@ -48,7 +48,7 @@ my $MAP = {
     background_color => "cs",
     tax => "tax",
     custom_field => "custom",
-    invocie => "invoice"
+    invoice => "invoice"
 };
 
 sub new {

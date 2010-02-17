@@ -2,11 +2,11 @@ id: StoreFront
 name: 'Store Front'
 description: 'A plugin that allows for your system to accept, receive and track payments and orders for good and subscriptions on your system.'
 version: 0.1
-schema_version: 1.3
+schema_version: 1.7
 
 object_types:
   asset.product: MT::Asset::Product
-#  payment: Subscriptions::Payment
+  payment: StoreFront::Payment
 #  subscription: StoreFront::Subscription
 
 config_settings:
@@ -145,12 +145,14 @@ applications:
       store:orders:
         label: Manage Payments
         order: 30
+        mode: list_payment
 #    list_filters: $StoreFront::StoreFront::Plugin::load_list_filters
     methods:
       create_product: $StoreFront::StoreFront::CMS::create_product
       edit_product: $StoreFront::StoreFront::CMS::edit_product
       save_product: $StoreFront::StoreFront::CMS::save_product
       list_product: $StoreFront::StoreFront::CMS::list_product
+      list_payment: $StoreFront::StoreFront::CMS::list_payment
 #      create_sub: $StoreFront::StoreFront::CMS::create_subscription
 
 callbacks:

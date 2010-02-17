@@ -79,7 +79,7 @@ sub button {
             name              => $asset->label,
             amount            => $price,
             quantity          => 1,
-            item_number       => $asset->sku_id,
+            item_number       => $asset->id,
             edit_quantity     => 0
         };
         $options->{edit_quantity} = 1 if $asset->limit_per_order;
@@ -89,6 +89,7 @@ sub button {
         $options = {
             name               => $asset->label,
             price              => $price,
+            item_number        => $asset->id,
             duration           => $asset->duration,
             duration_units     => _map_units($asset->duration_units),
             retry_on_error     => 1, #$asset->retry_on_error,

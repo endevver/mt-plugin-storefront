@@ -174,7 +174,66 @@ sub list_product {
         args     => \%args,
         listing_screen => 1,
         code     => $code,
-        template => $plugin->load_tmpl('list.tmpl'),
+        template => $plugin->load_tmpl('list_product.tmpl'),
+        params   => \%params,
+    });
+}
+
+sub list_payment {
+    my $app = shift;
+    my %param = @_;
+
+    my $author    = $app->user;
+    my $list_pref = $app->list_pref('payment');
+
+    my $base = $app->blog->site_url;
+    my $date_format          = "%Y.%m.%d";
+    my $datetime_format      = "%Y-%m-%d %H:%M:%S";
+
+    my $code = sub {
+        my ($obj, $row) = @_;
+        my $product = MT->model('asset.product')->load( $obj->product_id );
+
+        $row->{id}           = $obj->id;
+        $row->{product_name} = encode_html($product->label);
+        $row->{is_test}      = $obj->is_test;
+        $row->{is_pending}   = $obj->is_pending;
+        $row->{buyer}        = $obj->payer_email;
+        $row->{status}       = $obj->payment_status;
+        $row->{amount}       = $obj->gross_amount;
+
+        if ( my $ts = $obj->created_on ) {
+            $row->{created_on_formatted} =
+                format_ts( $date_format, $ts, $app->blog, $app->user ? $app->user->preferred_language : undef );
+            $row->{created_on_time_formatted} =
+              format_ts( $datetime_format, $ts, $app->blog, $app->user ? $app->user->preferred_language : undef );
+            $row->{created_on_relative} =
+              relative_date( $ts, time, $app->blog );
+        }
+    };
+
+    my %terms = (
+		 blog_id => $app->blog->id,
+    );
+
+    my %args = (
+		limit => $list_pref->{rows},
+		offset => $app->param('offset') || 0,
+		sort => 'created_on',
+		direction => 'descend',
+    );
+
+    my %params = (
+                  'saved_deleted' => $app->{query}->param('saved_deleted') == 1,
+    );
+    my $plugin = MT->component('StoreFront');
+    $app->listing({
+        type     => 'payment',
+        terms    => \%terms,
+        args     => \%args,
+        listing_screen => 1,
+        code     => $code,
+        template => $plugin->load_tmpl('list_payment.tmpl'),
         params   => \%params,
     });
 }
