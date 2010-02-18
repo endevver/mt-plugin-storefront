@@ -1,4 +1,4 @@
-<mt:setvar name="page_title" value="<__trans phrase="Manage Payment">">
+<mt:setvar name="page_title" value="<__trans phrase="Manage Payments">">
 <mt:ignore>
 <mt:setvarblock name="action_buttons">
     <mt:if name="is_administrator">
@@ -26,7 +26,7 @@
     function init()
     {
     	// setup
-    	tableSelect = new TC.TableSelect( "payment-listing-table" );
+    	tableSelect = new TC.TableSelect( "sf.payment-listing-table" );
     	tableSelect.rowSelect = true;
     }
     TC.attachLoadEvent( init );
@@ -53,7 +53,7 @@
 
 <$mt:include name="include/header.tmpl"$>
 
-<mtapp:listing type="payment">
+<mtapp:listing type="sf.payment">
     <mt:if name="__first__">
     <thead>
         <tr>
@@ -67,11 +67,11 @@
     </thead>
     <tbody>
     </mt:if>
-        <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if><mt:if name="is_test"> test</mt:if><mt:if name="is_pending"> pending</mt:if>">
+        <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if><mt:if name="is_test"> test</mt:if><mt:if name="is_pending"> pending</mt:if><mt:if name="is_refunded"> refunded</mt:if>">
             <td class="cb"><input type="checkbox" name="id" value="<mt:var name="id">" class="select" /></td>
             <td><$mt:var name="product_name"$></td>
             <td><$mt:var name="buyer"$></td>
-            <td><$mt:var name="status"$></td>
+            <td><mt:if name="is_refunded">Refunded<mt:else><$mt:var name="status"$></mt:if></td>
             <td><$mt:var name="amount"$></td>
             <td>
             <mt:if name="created_on_relative">

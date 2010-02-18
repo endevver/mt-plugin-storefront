@@ -1,15 +1,4 @@
-<mt:setvar name="page_title" value="<__trans phrase="Manage Products">">
-<mt:ignore>
-<mt:setvarblock name="action_buttons">
-    <mt:if name="is_administrator">
-    <a href="javascript:void(0)"
-        onclick="doRemoveItems(getByID('<$mt:var name="object_type"$>-listing-form'), '<__trans phrase="blog" escape="js">', '<__trans phrase="blogs" escape="js">'); return false;"
-        accesskey="x"
-        title="<__trans phrase="Delete selected URIs (x)">"
-        ><__trans phrase="Delete"></a>
-    </mt:if>
-</mt:setvarblock>
-</mt:ignore>
+<mt:setvar name="page_title" value="<__trans phrase="Manage Subscriptions">">
 <mt:setvarblock name="related_content">
     <mt:include name="include/display_options.tmpl" />
     <mtapp:widget
@@ -26,7 +15,7 @@
     function init()
     {
     	// setup
-    	tableSelect = new TC.TableSelect( "asset.product-listing-table" );
+    	tableSelect = new TC.TableSelect( "sf.subscription-listing-table" );
     	tableSelect.rowSelect = true;
     }
     TC.attachLoadEvent( init );
@@ -38,48 +27,41 @@
         <mtapp:statusmsg
             id="message"
             class="success">
-            <__trans phrase="The product(s) you selected has been deleted.">
+            <__trans phrase="The subscription(s) you selected has been deleted.">
         </mtapp:statusmsg>
     </mt:if>
 </mt:setvarblock>
 
+<mt:ignore>
 <mt:setvarblock name="action_buttons">
     <a href="javascript:void(0)"
        onclick="doRemoveItems(getByID('<$mt:var name="object_type"$>-listing-form'), '<mt:var name="object_label" lower_case="1" escape="js">', '<mt:var name="object_label_plural" lower_case="1" escape="js">'); return false;"
        accesskey="x" title="<$mt:var name="delete_button_title"$>"><__trans phrase="Delete"></a>
 </mt:setvarblock>
+</mt:ignore>
 
 <$mt:include name="include/header.tmpl"$>
 
-<mtapp:listing type="asset.product">
+<mtapp:listing type="sf.subscription">
     <mt:if name="__first__">
     <thead>
         <tr>
             <th class="cb"><input type="checkbox" name="id-head" value="all" class="select" /></th>
-            <th id="l-name"><__trans phrase="Name"></th>
-            <th id="l-type"><__trans phrase="Type"></th>
-            <th id="l-list"><__trans phrase="Price"></th>
-            <th id="l-stat"><__trans phrase="Status"></th>
-            <th id="l-invt"><__trans phrase="Inventory"></th>
+            <th id="l-name"><__trans phrase="Product Name"></th>
+            <th id="l-type"><__trans phrase="Status"></th>
+            <th id="l-date"><__trans phrase="Value"></th>
+            <th id="l-date"><__trans phrase="Last Payment"></th>
             <th id="l-date"><__trans phrase="Created On"></th>
         </tr>
     </thead>
     <tbody>
     </mt:if>
-        <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if>">
+        <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if><mt:if name="is_test"> test</mt:if>">
             <td class="cb"><input type="checkbox" name="id" value="<mt:var name="id">" class="select" /></td>
-            <td><a href="javascript:void(0)" onclick="openDialog(null,'create_product','id=<$mt:var name="id"$>&blog_id=<$mt:var name="blog_id"$>');return false;"><$mt:var name="name"$></a></td>
-            <td><$mt:var name="type"$></td>
-            <td>
-              <mt:if name="sale_price" lt="$list_price">
-                <$mt:var name="price_f"$>
-                <img src="<$mt:StaticWebPath$>plugins/StoreFront/sale_bug.gif" />
-              <mt:else>
-                <$mt:var name="price_f"$>
-              </mt:if>
-            </td>
+            <td><$mt:var name="product_name"$></td>
             <td><$mt:var name="status"$></td>
-            <td><$mt:var name="inventory"$></td>
+            <td><$mt:var name="value"$></td>
+            <td><$mt:var name="last_payment"$></td>
             <td>
             <mt:if name="created_on_relative">
                 <mt:if name="dates_relative">

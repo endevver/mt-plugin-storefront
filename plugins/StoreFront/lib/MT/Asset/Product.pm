@@ -48,6 +48,25 @@ sub has_thumbnail { 0; }
 # 1 - one time
 # 2 - recurring
 
+sub cost_string {
+    my $asset   = shift;
+    if ($asset->payment_type == 1) {
+	my $p = $asset->sale_price ? $asset->sale_price : $asset->list_price; 
+	return ($p == 0 ? 'Free' : sprintf("\$%.2f",$p)); # TODO - currency symbol
+    } elsif ($asset->payment_type == 2) {
+	return 'Free' if $asset->list_price == 0;
+	my $p = $asset->list_price;
+	my $d = $asset->duration;
+	my $u = $asset->duration_units;
+	$u =~ s/s$//;
+	if ($d == 1) {
+	    return sprintf("\$%.2f per %s",$p,$u);
+	} else {
+	    return sprintf("\$%.2f per %d %ss",$p,$d,$u);
+	}
+    }
+}
+
 sub as_html {
     my $asset   = shift;
     my ($param) = @_;

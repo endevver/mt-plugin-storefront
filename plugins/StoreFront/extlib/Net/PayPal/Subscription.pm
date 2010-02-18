@@ -20,6 +20,7 @@ $| = 1;    # autoflush
 
 my $MAP = {
     name => 'item_name',
+    item_number => 'item_number',
     trial_price => 'a1',
     trial_duration => 'p1',
     trial_duration_units => 't1',
@@ -37,7 +38,7 @@ sub new {
     my $params = shift;
     my $self   = {};
     foreach my $prop (qw( name trial_price trial_duration trial_duration_units
-                          price duration duration_units recurring_payments
+                          price duration duration_units recurring_payments item_number
                           recurrence_count retry_on_error modify_rules )) {
         if ( exists $params->{$prop} ) {
             $self->{$prop} = $params->{$prop};

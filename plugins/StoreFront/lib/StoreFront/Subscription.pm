@@ -8,9 +8,11 @@ __PACKAGE__->install_properties({
         'id' => 'integer not null auto_increment',
 	'blog_id' => 'integer not null',
 	'product_id' => 'integer not null',
-	'author_id' => 'integer not null',
+	'author_id' => 'integer',
 	'external_id' => 'string(20)',
+	'source' => 'string(20)',
 	'status' => 'integer not null',
+        'is_test' => 'integer',
 	'next_payment_due' => 'datetime',
     },
     indexes => {
@@ -42,6 +44,34 @@ use Exporter;
 use vars qw( @EXPORT_OK %EXPORT_TAGS);
 @EXPORT_OK = qw( ACTIVE PENDING EXPIRED CANCELLED FAILURE );
 %EXPORT_TAGS = (constants => [ qw(ACTIVE PENDING EXPIRED CANCELLED FAILURE) ]);
+
+sub status_string {
+    my $self = shift;
+    if ($self->status == ACTIVE()) {
+	return "Active";
+    } elsif ($self->status == PENDING()) {
+	return "Pending";
+    } elsif ($self->status == EXPIRED()) {
+	return "Expired";
+    } elsif ($self->status == CANCELLED()) {
+	return "Cancelled";
+    } elsif ($self->status == FAILURE()) {
+	return "Failed";
+    }
+}
+
+sub is_active {
+    my $self = shift;
+    return $self->status == ACTIVE();
+}
+
+sub class_label {
+    MT->translate("Subscription");
+}
+
+sub class_label_plural {
+    MT->translate("Subscriptions");
+}
 
 1;
 __END__

@@ -9,9 +9,11 @@ __PACKAGE__->install_properties({
         'blog_id' => 'integer not null',
         'product_id' => 'integer not null',
         'subscription_id' => 'integer',
+	'source' => 'string(20)',
 	'payer_email' => 'string(255)',
         'is_test' => 'integer',
         'is_pending' => 'integer',
+        'is_refunded' => 'integer',
         'quantity' => 'integer',
 	'external_transaction_id' => 'string(36)',
 	'external_payer_id' => 'string(20)',
@@ -59,6 +61,14 @@ __PACKAGE__->install_properties({
     datasource => 'payment',
     primary_key => 'id',
 });
+
+sub class_label {
+    MT->translate("Payment");
+}
+
+sub class_label_plural {
+    MT->translate("Payments");
+}
 
 1;
 __END__

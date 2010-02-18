@@ -130,15 +130,9 @@ sub list_product {
         $row->{id}         = $obj->id;
         $row->{name}       = encode_html($obj->label);
         $row->{type}       = $obj->payment_type == 1 ? 'Product' : 'Subscription';
-        if ($obj->payment_type == 1) {
-            $row->{list_price} = $obj->list_price;
-            $row->{sale_price} = $obj->sale_price || undef;
-            $row->{list_price_f} = sprintf("\$%.2f",$obj->list_price);
-            $row->{sale_price_f} = sprintf("\$%.2f",$obj->sale_price);
-        } else {
-            $row->{list_price} = $obj->list_price;
-            $row->{list_price_f} = sprintf("\$%.2f",$obj->list_price);
-        }
+	$row->{price_f}    = $obj->cost_string;
+	$row->{list_price} = $obj->list_price;
+	$row->{sale_price} = $obj->sale_price || undef;
         $row->{status}     = $obj->status;
         $row->{inventory}  = $obj->inventory_type == 0 ? 'Unlimitted' : $obj->inventory;
 
@@ -198,9 +192,10 @@ sub list_payment {
         $row->{product_name} = encode_html($product->label);
         $row->{is_test}      = $obj->is_test;
         $row->{is_pending}   = $obj->is_pending;
+        $row->{is_refunded}  = $obj->is_refunded;
         $row->{buyer}        = $obj->payer_email;
         $row->{status}       = $obj->payment_status;
-        $row->{amount}       = $obj->gross_amount;
+        $row->{amount}       = sprintf('$%.2f',$obj->gross_amount);
 
         if ( my $ts = $obj->created_on ) {
             $row->{created_on_formatted} =
@@ -228,12 +223,82 @@ sub list_payment {
     );
     my $plugin = MT->component('StoreFront');
     $app->listing({
-        type     => 'payment',
+        type     => 'sf.payment',
         terms    => \%terms,
         args     => \%args,
         listing_screen => 1,
         code     => $code,
         template => $plugin->load_tmpl('list_payment.tmpl'),
+        params   => \%params,
+    });
+}
+
+sub list_subscription {
+    my $app = shift;
+    my %param = @_;
+
+    my $author    = $app->user;
+    my $list_pref = $app->list_pref('subscription');
+
+    my $base            = $app->blog->site_url;
+    my $date_format     = "%b %d, %Y";
+    my $datetime_format = "%Y-%m-%d %H:%M:%S";
+
+    my $code = sub {
+        my ($obj, $row) = @_;
+        my $product = MT->model('asset.product')->load( $obj->product_id );
+	my $payment = MT->model('sf.payment')->load({ subscription_id => $obj->id },
+						 { lastn => 1,
+						   sort => 'created_on',
+						   direction => 'descend', 
+					         });
+
+        $row->{id}           = $obj->id;
+        $row->{product_name} = encode_html($product->label);
+        $row->{is_test}      = $obj->is_test;
+	$row->{status}       = $obj->status_string;
+	$row->{value}        = $product->cost_string;
+
+	if ($payment) {
+	    $row->{last_payment} = 
+                format_ts( $date_format, $obj->created_on, 
+			   $app->blog, $app->user ? $app->user->preferred_language : undef );
+	} else {
+	    $row->{last_payment} = 'Never';
+	}
+
+        if ( my $ts = $obj->created_on ) {
+            $row->{created_on_formatted} =
+                format_ts( $date_format, $ts, $app->blog, $app->user ? $app->user->preferred_language : undef );
+            $row->{created_on_time_formatted} =
+              format_ts( $datetime_format, $ts, $app->blog, $app->user ? $app->user->preferred_language : undef );
+            $row->{created_on_relative} =
+              relative_date( $ts, time, $app->blog );
+        }
+    };
+
+    my %terms = (
+		 blog_id => $app->blog->id,
+    );
+
+    my %args = (
+		limit => $list_pref->{rows},
+		offset => $app->param('offset') || 0,
+		sort => 'created_on',
+		direction => 'descend',
+    );
+
+    my %params = (
+                  'saved_deleted' => $app->{query}->param('saved_deleted') == 1,
+    );
+    my $plugin = MT->component('StoreFront');
+    $app->listing({
+        type     => 'sf.subscription',
+        terms    => \%terms,
+        args     => \%args,
+        listing_screen => 1,
+        code     => $code,
+        template => $plugin->load_tmpl('list_subscription.tmpl'),
         params   => \%params,
     });
 }

@@ -82,7 +82,7 @@ sub button {
             item_number       => $asset->id,
             edit_quantity     => 0
         };
-        $options->{edit_quantity} = 1 if $asset->limit_per_order;
+        $options->{edit_quantity} = 1 unless $asset->limit_per_order;
         $options->{tax_rate} = $asset->tax_rate if $asset->tax_rate > 0;
     } else {
         $item_class = 'Net::PayPal::Subscription';
@@ -93,7 +93,8 @@ sub button {
             duration           => $asset->duration,
             duration_units     => _map_units($asset->duration_units),
             retry_on_error     => 1, #$asset->retry_on_error,
-            modify_rules       => 2
+#            modify_rules       => 2
+# TODO - set modify only when the sub needs to be modified
         };
         if ($asset->recur) {
             $options->{recurring_payments} = 1;

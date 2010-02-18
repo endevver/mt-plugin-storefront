@@ -110,7 +110,7 @@ sub handle {
 # A dispute has been resolved and closed
 sub adjustment {
     my $app = shift;
-    $logger->debug('Processing adjustment');
+    $logger->debug('Processing adjustment (UNIMPLEMENTED)');
     return 1;
 }
 
@@ -118,49 +118,50 @@ sub adjustment {
 # Shopping Cart.
 sub cart {
     my $app = shift;
-    $logger->debug('Processing cart');
+    $logger->debug('Processing cart (UNIMPLEMENTED)');
     return 1;
 }
 
 # Payment received for a single item; source is Express Checkout
 sub express_checkout {
     my $app = shift;
-    $logger->debug('Processing express_checkout');
+    $logger->debug('Processing express_checkout, forwarding to web_accept');
+    return _web_accept($app);
     return 1;
 }
 
 # Payment sent using MassPay
 sub masspay {
     my $app = shift;
-    $logger->debug('Processing masspay');
+    $logger->debug('Processing masspay (UNIMPLEMENTED)');
     return 1;
 }
 
 # Monthly subscription paid for Website Payments Pro
 sub merch_pmt {
     my $app = shift;
-    $logger->debug('Processing merchant payment');
+    $logger->debug('Processing merchant payment (UNIMPLEMENTED)');
     return 1;
 }
 
 # A new dispute was filed
 sub new_case {
     my $app = shift;
-    $logger->debug('Processing new dispute');
+    $logger->debug('Processing new dispute (UNIMPLEMENTED)');
     return 1;
 }
 
 # Recurring payment received
 sub recurring_payment {
     my $app = shift;
-    $logger->debug('Processing recurring payment');
+    $logger->debug('Processing recurring payment (UNIMPLEMENTED)');
     return 1;
 }
 
 # Recurring payment profile created
 sub recurring_payment_profile_created {
     my $app = shift;
-    $logger->debug('Processing recurring payment (with profile)');
+    $logger->debug('Processing recurring payment (with profile) (UNIMPLEMENTED)');
     return 1;
 }
 
@@ -191,6 +192,7 @@ sub subscr_cancel {
     $subsc->save or return $app->error("Unable to cancel subscription.");;
     # TODO - fire an email
     # TODO - fire callbacks
+    # TODO - increment inventory??
     return 1;
 }
 
@@ -199,7 +201,7 @@ sub subscr_eot {
     my $app = shift;
     $logger->debug('Processing subscription expired');
     my $id = $app->param('subscr_id');
-    my $subsc = MT->model('subscription')->load({ external_id => $id });
+    my $subsc = MT->model('sf.subscription')->load({ external_id => $id });
     unless ($subsc) {
 	MT->log({ message => "Could not find subscription with ID: $id" });
 	return $app->error("Error processing subscription expiration");
@@ -210,10 +212,11 @@ sub subscr_eot {
 	MT->log({ blog_id => $subsc->blog_id,
 		  message => "Warning: could not find product with ID: $pid, expiring anyway." });
     }
-    $subsc->status( MT->model('subscription')->EXPIRED() );
+    $subsc->status( MT->model('sf.subscription')->EXPIRED() );
     $subsc->save or return $app->error("Unable to expire subscription.");;
     # TODO - fire an email
     # TODO - fire callbacks
+    # TODO - increment inventory??
     return 1;
 }
 
@@ -222,11 +225,11 @@ sub subscr_failed {
     my $app = shift;
     $logger->debug('Processing subscription failure');
     my $id = $app->param('subscr_id');
-    my $subsc = MT->model('subscription')->load({ external_id => $id });
+    my $subsc = MT->model('sf.subscription')->load({ external_id => $id });
     my $pid = $subsc->product_id;
     unless ($subsc) {
 	MT->log({ message => "Could not find product with ID: $pid" });
-	$subsc = MT->model('subscription')->new;
+	$subsc = MT->model('sf.subscription')->new;
 	$pid = $app->param( 'item_number' );
     }
     my $product = MT->model('asset.product')->load( $pid );
@@ -234,13 +237,18 @@ sub subscr_failed {
 	MT->log({ blog_id => $subsc->blog_id,
 		  message => "Warning: could not find product with ID: $pid, expiring anyway." });
     }
+    # Subscription failed so it is unlikely one has been created.
+    # Let's create one - this will at least surface in the UI and give admins a chance to follow
+    # up with customer.
     unless ($subsc->id) {
 	$subsc->product_id( $pid );
 	$subsc->blog_id( $product->blog_id );
+	$subsc->is_test( $app->param('ipn_test') );
 	$subsc->external_id( $id );
 	$subsc->author_id( $app->param('custom') );
+	$subsc->source( 'paypal' );
     }
-    $subsc->status( MT->model('subscription')->FAILURE() );
+    $subsc->status( MT->model('sf.subscription')->FAILURE() );
     $subsc->save or return $app->error("Unable to expire subscription.");;
     # TODO - fire an email
     # TODO - fire callbacks
@@ -250,7 +258,7 @@ sub subscr_failed {
 # Subscription modified
 sub subscr_modify {
     my $app = shift;
-    $logger->debug('Processing subscription modification');
+    $logger->debug('Processing subscription modification (UNIMPLEMENTED)');
     # TODO - not currently implemented
     return 1;
 }
@@ -261,7 +269,7 @@ sub subscr_payment {
     $logger->debug('Processing subscription payment');
 
     my $id = $app->param('subscr_id');
-    my $subsc = MT->model('subscription')->load({ external_id => $id });
+    my $subsc = MT->model('sf.subscription')->load({ external_id => $id });
     unless ($subsc) {
 	MT->log({ message => "Could not find subscription with ID: $id" });
 	return $app->error("Error processing subscription payment");
@@ -291,13 +299,37 @@ sub subscr_signup {
 	return $app->error("Error processing subscription sign-up");
     }
 
-    my $subsc = MT->model('subscription')->new;
+    if ($product->inventory_type == 1) {
+	# Decrement inventory
+	my $i = $product->inventory;
+	my $q = $app->param('quantity') || 1;
+	if ($i < $q) {
+	    MT->log({ blog_id => $product->blog_id,
+		      message => "ERROR: Attempt to subscribe to more items then are in inventory. Request for $q, but $i are on hand." });
+	    return $app->error("Unable to process subscription. Quantity exceeds inventory.");
+	    # TODO - send email
+	    # TODO - call backend API to place hold
+	} else {
+	    $product->inventory( $i - $q );
+	    $product->save;
+	}
+    }
+    $logger->debug("Creating subscription - product:".$product->id);
+    my $subsc = MT->model('sf.subscription')->new;
     $subsc->blog_id( $product->blog_id );
     $subsc->product_id( $product->id );
     $subsc->author_id( $app->param('custom') );
+    $subsc->is_test( $app->param('ipn_test') );
     $subsc->external_id( $app->param('subscr_id') );
-    $subsc->status( MT->model('subscription')->ACTIVE() );
-    $subsc->save or return $app->error("Unable to save new subscription.");;
+    $subsc->status( MT->model('sf.subscription')->ACTIVE() );
+    $subsc->source( 'paypal' );
+    $subsc->save or do {
+	$logger->debug("Unable to create subscription: " . $subsc->errstr);
+	return $app->error("Unable to save new subscription.");
+    };
+
+    MT->log({ blog_id => $product->blog_id,
+	      message => "Subscription successfully created" });
 
     return 1;
 }
@@ -321,6 +353,22 @@ sub web_accept {
 	return $app->error("Error processing payment");
     }
 
+    if ($product->payment_type == 1 && $product->inventory_type == 1) {
+	# Decrement inventory
+	my $i = $product->inventory;
+	my $q = $app->param('quantity') || 1;
+	if ($i < $q) {
+	    MT->log({ blog_id => $product->blog_id,
+		      message => "ERROR: Attempt to purchase more items then are in inventory. Request for $q, but $i are on hand." });
+	    return $app->error("Unable to process payment. Quantity exceeds inventory.");
+	    # TODO - send email
+	    # TODO - call backend API to place hold
+	} else {
+	    $product->inventory( $i - $q );
+	    $product->save;
+	}
+    }
+
     my $payment = _process_payment($app, $product);
     $payment->save or return $app->error("Unable to save payment.");;
     # TODO - fire callback
@@ -328,12 +376,26 @@ sub web_accept {
     return 1;
 }
 
+sub _process_refund {
+    my $app = shift;
+    my ($original) = @_; # the original payment record
+    $original->is_refunded(1);
+    $original->save;
+}
+
 sub _process_payment {
     my $app = shift;
     my ($product) = @_;
     my $txn_id = $app->param('txn_id');
 
-    my $payment = MT->model('payment')->load( { external_transaction_id => $txn_id } );
+    if ($app->param('mc_gross') < 0) {
+	if (my $parent = $app->param('parent_txn_id')) {
+	    my $original = MT->model('sf.payment')->load({ external_transaction_id => $parent });
+	    _process_refund($app, $original);
+	}
+    }
+
+    my $payment = MT->model('sf.payment')->load( { external_transaction_id => $txn_id } );
     unless ($payment) {
 	$payment = _init_new_payment($app,$product);
     }
@@ -345,7 +407,7 @@ sub _process_payment {
 	$payment->is_pending( 1 );
 	MT->log({
 	    blog_id => $payment->blog_id,
-	    message => "Received a PENDING payment: " . _reason_string( $payment->payment_status() )
+	    message => "Received a PENDING payment: " . _reason_string( $app->param('pending_reason') )
 	});
     } elsif ($payment->payment_status() eq 'Completed') {
 	# TODO - fire payment completed callbacks
@@ -356,7 +418,8 @@ sub _process_payment {
 sub _init_new_payment {
     my $app = shift;
     my ($product) = @_;
-    my $payment = MT->model('payment')->new;
+    my $payment = MT->model('sf.payment')->new;
+    $payment->source( 'paypal' );
     $payment->blog_id( $product->blog_id );
     $payment->product_id( $app->param('item_number') );
     $payment->payer_email( $app->param('payer_email') );
@@ -433,6 +496,4 @@ sub _reason_string {
 
 1;
 __END__
-
-qw(payment_type payment_date payment_status pending_reason address_status payer_status first_name last_name payer_email payer_id address_name address_country address_country_code address_zip address_state address_city address_street business receiver_email receiver_id residence_country item_name item_number quantity shipping tax mc_currency mc_fee mc_gross txn_type txn_id notify_version custom invoice charset)
 
