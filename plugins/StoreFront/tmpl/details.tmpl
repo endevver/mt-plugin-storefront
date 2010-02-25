@@ -1,0 +1,50 @@
+<mt:setvar name="page_title" value="<__trans phrase="Product Details">">
+<mt:setvarblock name="related_content">
+    <mtapp:PageActions />
+</mt:setvarblock>
+<mt:setvarblock name="html_head" append="1">
+    <link rel="stylesheet" type="text/css" href="<$mt:StaticWebPath$>plugins/StoreFront/app.css" />
+</mt:setvarblock>
+<$mt:include name="include/header.tmpl"$>
+
+<ul>
+  <li><label>Name</label>: <$mt:var name="product_name"$></li>
+  <li><label>List Price</label>: <$mt:var name="list_price"$></li>
+  <li><label>Sale Price</label>: <$mt:var name="sale_price"$></li>
+  <li><label>Total Earned</label>: <$mt:var name="total_earned"$></li>
+<mt:if name="payment_type" eq="1">
+<mt:else eq="2">
+  <li><label>Subscriber Count</label>: <a href="?__mode=list_subscription&blog_id=<$mt:var name="blog_id"$>&product_id=<$mt:var name="id"$>&status=1"><$mt:var name="subscriber_count"$></a></li>
+</mt:if>
+</ul>
+
+<mt:if name="payment_loop">
+<mt:setvarblock name="action_buttons"></mt:setvarblock>
+<mt:setvarblock name="listing_header">
+<h3>Payments</h3>
+</mt:setvarblock>
+<mtapp:listing loop="payment_loop" type="payment" default="<__trans phrase="No paymentscould be found.">" empty_message="<__trans phrase="No payments could be found.">" hide_pager="1" class="show_all">
+    <mt:if name="__first__">
+    <thead>
+        <tr>
+            <th id="l-type"><__trans phrase="Buyer"></th>
+            <th id="l-type"><__trans phrase="Status"></th>
+            <th id="l-list"><__trans phrase="Amount"></th>
+            <th id="l-date"><__trans phrase="Date"></th>
+        </tr>
+    </thead>
+    <tbody>
+    </mt:if>
+        <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if>">
+            <td><$mt:var name="buyer"$></td>
+            <td><mt:if name="is_refunded">Refunded<mt:else><$mt:var name="status"$></mt:if></td>
+            <td><$mt:var name="amount"$></td>
+            <td><$mt:var name="created_on_relative"$></td>
+        </tr>
+    <mt:if name="__last__">
+    </tbody>
+    </mt:if>
+</mtapp:listing>
+</mt:if>
+
+<$mt:include name="include/footer.tmpl"$>

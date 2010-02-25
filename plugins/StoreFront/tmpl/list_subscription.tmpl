@@ -75,7 +75,7 @@
         <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if><mt:if name="is_test"> test</mt:if>">
             <td class="cb"><input type="checkbox" name="id" value="<mt:var name="id">" class="select" /></td>
             <td><$mt:var name="payer_name"$></td>
-            <td><$mt:var name="product_name"$></td>
+            <td><a href="?__mode=product&id=<$mt:var name="product_id"$>&blog_id=<$mt:var name="blog_id"$>"><$mt:var name="product_name"$></a></td>
             <td><$mt:var name="status"$></td>
             <td><$mt:var name="value"$></td>
             <td><$mt:var name="last_payment"$></td>

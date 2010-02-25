@@ -7,6 +7,68 @@ sub create_subscription {
     my $app = shift;
 }
 
+sub product_details {
+    my $app    = shift;
+    my $q      = $app->{query};
+    my $blog   = $app->blog;
+    my $plugin = MT->component('StoreFront');
+
+    my $id     = $q->param('id');
+    my $product = MT->model('asset.product')->load($id);
+
+    my $date_format          = "%Y.%m.%d";
+    my $datetime_format      = "%Y-%m-%d %H:%M:%S";
+
+    my @payment_loop;
+    my @payments = MT->model('sf.payment')->load({ product_id => $id },{ lastn => 10, direction => 'descend', sort => 'created_on' } );
+    foreach my $obj (@payments) {
+	my $row = {};
+        $row->{id}           = $obj->id;
+        $row->{is_test}      = $obj->is_test;
+        $row->{is_pending}   = $obj->is_pending;
+        $row->{is_refunded}  = $obj->is_refunded;
+        $row->{status}       = $obj->payment_status;
+        $row->{amount}       = sprintf('$%.2f',$obj->gross_amount);
+	if ($obj->author_id) {
+	    my $author = MT->model('author')->load( $obj->author_id );
+	    if ($author) {
+		$row->{buyer} = $author->nickname;
+		$row->{buyer_id} = $author->id;
+	    } else {
+		$row->{buyer} = "User not found";
+	    }
+	} else {
+	    $row->{buyer}        = $obj->payer_email;
+	}
+        if ( my $ts = $obj->created_on ) {
+            $row->{created_on_formatted} =
+                format_ts( $date_format, $ts, $app->blog, $app->user ? $app->user->preferred_language : undef );
+            $row->{created_on_time_formatted} =
+              format_ts( $datetime_format, $ts, $app->blog, $app->user ? $app->user->preferred_language : undef );
+            $row->{created_on_relative} =
+              relative_date( $ts, time, $app->blog );
+        }
+	push @payment_loop, $row;
+    }
+
+    my $tmpl   = $app->load_tmpl('details.tmpl');
+    $tmpl->param( id => $product->id );
+    $tmpl->param( product_name => $product->label );
+    $tmpl->param( payment_type => $product->payment_type );
+    $tmpl->param( list_price => sprintf('$%.2f',$product->list_price) );
+    $tmpl->param( sale_price => sprintf('$%.2f',$product->sale_price) );
+    $tmpl->param( payment_loop => \@payment_loop );
+    my $iter = MT->model('sf.payment')->sum_group_by({ product_id => $id },{ group => ['product_id'], sum => 'gross_amount' });
+    if ( my ($amount, $cat, $inv) = $iter->() ) {
+      $tmpl->param( total_earned => sprintf('$%.2f',$amount) );
+    }
+    if ($product->payment_type == 1) {
+    } else {
+      $tmpl->param( subscriber_count => MT->model('sf.subscription')->count({ product_id => $id, status => 1 }) );
+    }
+    return $app->build_page($tmpl);
+}
+
 sub create_product {
     my $app    = shift;
     my $q      = $app->{query};
@@ -222,6 +284,7 @@ sub list_payment {
     my %terms = (
 		 blog_id => $app->blog->id,
     );
+    $terms{product_id} = $app->param('product_id') if $app->param('product_id');
 
     my %args = (
 		limit => $list_pref->{rows},
@@ -277,6 +340,7 @@ sub list_subscription {
 	}
         $row->{id}           = $obj->id;
         $row->{product_name} = encode_html($product->label);
+        $row->{product_id}   = $product->id;
         $row->{is_test}      = $obj->is_test;
 	$row->{status}       = $obj->status_string;
 	$row->{value}        = $product->cost_string;
@@ -306,7 +370,9 @@ sub list_subscription {
     my %terms = (
 		 blog_id => $app->blog->id,
     );
-
+    $terms{product_id} = $app->param('product_id') if $app->param('product_id');
+    $terms{author_id} = $app->param('author_id') if $app->param('author_id');
+    $terms{status} = $app->param('status') if $app->param('status');
     my %args = (
 		limit => $list_pref->{rows},
 		offset => $app->param('offset') || 0,
