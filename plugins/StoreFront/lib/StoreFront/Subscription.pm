@@ -18,6 +18,9 @@ __PACKAGE__->install_properties({
     indexes => {
 	blog_id => 1,
 	product_id => 1,
+	external_id => {
+	    unique => 1
+	},
 	author_id => 1,
 	status => 1,
         blog_status => {
@@ -33,17 +36,18 @@ __PACKAGE__->install_properties({
     primary_key => 'id',
 });
 
-sub ACTIVE ()    { 1 }
-sub PENDING ()   { 2 }
-sub EXPIRED ()   { 3 }
-sub CANCELLED () { 4 }
-sub FAILURE ()   { 5 }
+sub ACTIVE ()     { 1 }
+sub PENDING ()    { 2 }
+sub EXPIRED ()    { 3 }
+sub CANCELLED ()  { 4 }
+sub FAILURE ()    { 5 }
+sub IN_PROCESS () { 6 }
 
 use Exporter;
 *import = \&Exporter::import;
 use vars qw( @EXPORT_OK %EXPORT_TAGS);
-@EXPORT_OK = qw( ACTIVE PENDING EXPIRED CANCELLED FAILURE );
-%EXPORT_TAGS = (constants => [ qw(ACTIVE PENDING EXPIRED CANCELLED FAILURE) ]);
+@EXPORT_OK = qw( ACTIVE PENDING EXPIRED CANCELLED FAILURE IN_PROCESS );
+%EXPORT_TAGS = (constants => [ qw(ACTIVE PENDING EXPIRED CANCELLED FAILURE IN_PROCESS) ]);
 
 sub status_string {
     my $self = shift;
@@ -57,6 +61,8 @@ sub status_string {
 	return "Cancelled";
     } elsif ($self->status == FAILURE()) {
 	return "Failed";
+    } elsif ($self->status == IN_PROCESS()) {
+	return "In Process";
     }
 }
 

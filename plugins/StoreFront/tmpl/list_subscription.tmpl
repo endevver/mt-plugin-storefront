@@ -9,6 +9,13 @@
     <mtapp:PageActions />
 </mt:setvarblock>
 <mt:setvarblock name="html_head" append="1">
+    <link rel="stylesheet" type="text/css" href="<$mt:StaticWebPath$>plugins/StoreFront/app.css" />
+    <link rel="stylesheet" type="text/css" href="<$mt:StaticWebPath$>plugins/StoreFront/jquery/themes/base/ui.all.css" />
+    <script type="text/javascript" src="<$mt:StaticWebPath$>plugins/StoreFront/jquery/jquery-1.3.2.js"></script>
+    <script type="text/javascript" src="<$mt:StaticWebPath$>plugins/StoreFront/jquery/ui/ui.core.js"></script>
+    <script type="text/javascript" src="<$mt:StaticWebPath$>plugins/StoreFront/jquery/ui/ui.draggable.js"></script>
+    <script type="text/javascript" src="<$mt:StaticWebPath$>plugins/StoreFront/jquery/ui/ui.resizable.js"></script>
+    <script type="text/javascript" src="<$mt:StaticWebPath$>plugins/StoreFront/jquery/ui/ui.dialog.js"></script>
     <script type="text/javascript">
     <!--
     var tableSelect;
@@ -18,7 +25,14 @@
     	tableSelect = new TC.TableSelect( "sf.subscription-listing-table" );
     	tableSelect.rowSelect = true;
     }
-    TC.attachLoadEvent( init );
+    $(document).ready( function() {
+      $('td .dialog').each( function() { $(this).dialog({ autoOpen: false }); });
+      $('a.show_info').click( function() {
+	var id = $(this).attr('dialog_id');
+	$('#'+id).dialog('open');
+      });
+      init();
+    });
     //-->
     </script> 
 </mt:setvarblock>
@@ -51,8 +65,9 @@
             <th id="l-name"><__trans phrase="Product Name"></th>
             <th id="l-type"><__trans phrase="Status"></th>
             <th id="l-date"><__trans phrase="Value"></th>
-            <th id="l-date"><__trans phrase="Last Payment"></th>
+	            <th id="l-date"><__trans phrase="Last Payment"></th>
             <th id="l-date"><__trans phrase="Created On"></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -74,6 +89,15 @@
             <mt:else>
                         <$mt:var name="created_on_formatted"$>
             </mt:if>
+            </td>
+	    <td>
+              <a dialog_id="dialog-<$mt:var name="id"$>" href="javascript:void(0)" class="show_info"><img src="<$mt:StaticWebPath$>plugins/StoreFront/info-icon.gif" width="14" height="14" /></a>
+              <div id="dialog-<$mt:var name="id"$>" class="info dialog" title="Subscription Details">
+                <ul>
+                  <li><label>Source</label>: <$mt:var name="source"$></li>
+                  <li><label>Subscription ID</label>: <$mt:var name="external_id"$></li>
+                </ul>
+              </div>
             </td>
         </tr>
     <mt:if name="__last__">

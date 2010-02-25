@@ -121,6 +121,8 @@ options:
        discontinued
        pre-order only
 
+#tasks: $StoreFront::StoreFront::Plugin::load_tasks
+
 applications:
   paypal:
     handler: 'StoreFront::PayPal::App'

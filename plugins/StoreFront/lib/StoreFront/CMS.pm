@@ -199,7 +199,7 @@ sub list_payment {
 	if ($obj->author_id) {
 	    my $author = MT->model('author')->load( $obj->author_id );
 	    if ($author) {
-		$row->{buyer} = $author->name;
+		$row->{buyer} = $author->nickname;
 		$row->{buyer_id} = $author->id;
 	    } else {
 		$row->{buyer} = "User not found";
@@ -260,14 +260,14 @@ sub list_subscription {
         my ($obj, $row) = @_;
         my $product = MT->model('asset.product')->load( $obj->product_id );
 	my $payment = MT->model('sf.payment')->load({ subscription_id => $obj->id },
-						 { lastn => 1,
-						   sort => 'created_on',
-						   direction => 'descend', 
-					         });
+						    { lastn => 1,
+						      sort => 'created_on',
+						      direction => 'descend', 
+						  });
 	if ($payment && $payment->author_id) {
 	    my $author = MT->model('author')->load( $payment->author_id );
 	    if ($author) {
-		$row->{payer_name} = $author->name;
+		$row->{payer_name} = $author->nickname;
 		$row->{payer_id} = $author->id;
 	    } else {
 		$row->{payer_name} = "User not found";
@@ -280,6 +280,10 @@ sub list_subscription {
         $row->{is_test}      = $obj->is_test;
 	$row->{status}       = $obj->status_string;
 	$row->{value}        = $product->cost_string;
+
+	# For the dialog
+	$row->{external_id}  = $obj->external_id;
+	$row->{source}       = $obj->source;
 
 	if ($payment) {
 	    $row->{last_payment} = 
