@@ -40,10 +40,16 @@ sub button {
     my $blog = $ctx->stash('blog');
     my $config  = $plugin->get_config_hash( 'system' );
 
+    my $user = $ctx->stash('author');
+
     my $button;
     $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/btn_xpressCheckout.gif' if ($config->{buynow_button} eq 'Checkout');
     $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but23.gif' if ($config->{buynow_button} eq 'Buy Now 1');
     $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but3.gif' if ($config->{buynow_button} eq 'Buy Now 2');
+
+    if ($args->{require_login}) {
+	return '<a href="'.$ctx->_hdlr_admin_cgi_path.MT->config->CommentScript."?__mode=paypal_purchase&id=".$asset->id.'"><img src="'.$button.'" alt="Buy Now" /></a>';
+    }
 
     my $c = Net::PayPal::Customer->new({});
     my $options = {
@@ -58,6 +64,7 @@ sub button {
         method => 'post',
         locale => 'US',
         button_image => $button,
+	no_button => $args->{autosubmit},
         customer => $c,
         display_shipping_address => 0,
 #        background_color => 'white',
@@ -68,6 +75,7 @@ sub button {
 #        image_url => $config->{purchase_cancel},
 #        invoice => 1,
     };
+    $options->{custom_field} = 'user_id:' . $user->id if ($user);
     $options->{display_shipping_address} = 1 if ($asset->requires_shipping);
 
     my $b = Net::PayPal::Button->new( $options );

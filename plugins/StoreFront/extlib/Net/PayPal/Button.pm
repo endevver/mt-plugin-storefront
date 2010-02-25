@@ -12,7 +12,7 @@ Net::PayPal::Button->mk_accessors(qw( sandbox_mode success_url notify_url cancel
                                       display_shipping_address display_comment image_url
                                       contact_email custom_field invoice tax customer items 
                                       openssl my_keyfile my_certfile paypal_certfile
-                                      button_text button_image cert_id
+                                      button_text button_image cert_id no_button
 ));
 
 # We are exporting functions
@@ -62,6 +62,7 @@ sub new {
                           contact_email custom_field invoice tax customer
                           openssl my_keyfile my_certfile paypal_certfile
                           button_text button_image cert_id user_agent
+			  no_button
                          )) {
         if ( exists $params->{$prop} ) {
             $self->{$prop} = $params->{$prop};
@@ -180,10 +181,12 @@ ENDHTML
 	    # Die?
 	}
     }
-    if ($self->button_image) {
-        $html .= '<input type="image" src="'.$self->{button_image}.'" />'."\n";
-    } else {
-        $html .= '<input type="submit" value="'.$self->{button_text}.'" />'."\n";
+    unless ($self->no_button) {
+	if ($self->button_image) {
+	    $html .= '<input type="image" src="'.$self->{button_image}.'" />'."\n";
+	} else {
+	    $html .= '<input type="submit" value="'.$self->{button_text}.'" />'."\n";
+	}
     }
     $html .= "</form>\n";
     return $html;

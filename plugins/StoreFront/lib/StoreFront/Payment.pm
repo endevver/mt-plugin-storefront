@@ -8,6 +8,7 @@ __PACKAGE__->install_properties({
         'id' => 'integer not null auto_increment',
         'blog_id' => 'integer not null',
         'product_id' => 'integer not null',
+        'author_id' => 'integer',
         'subscription_id' => 'integer',
 	'source' => 'string(20)',
 	'payer_email' => 'string(255)',

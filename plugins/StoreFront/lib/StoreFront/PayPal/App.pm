@@ -20,7 +20,7 @@ sub init {
     $app->SUPER::init(@_) or return $app->error("Initialization failed");
     $app->request_content
       if $app->request_method eq 'POST' || $app->request_method eq 'PUT';
-    $app->add_methods( handle => \&handle, );
+    $app->add_methods( handle => \&handle ); 
     $app->{default_mode}  = 'handle';
     $app->{is_admin}      = 0;
     $app->{warning_trace} = 0;
@@ -30,6 +30,72 @@ sub init {
     $app->{ua} = $ua;
 
     $app;
+}
+
+# This method belongs to the MT::App::Comments namespace
+sub purchase {
+    my $app = shift;
+    my $asset = MT->model('asset.product')->load( $app->param('id') );
+    unless ($asset) {
+	return $app->error("Please specify a valid product ID.");
+    }
+    my $user = _login_user_commenter( $app );
+    unless ($user) {
+	$app->add_return_arg(
+			     '__mode' => 'paypal_purchase',
+			     'id' => $asset->id,
+			     'static' => 0,
+	);
+	return $app->login_form(
+				blog_id    => $asset->blog_id,
+				static     => 0,
+				return_url => $app->return_uri, 
+				message    => $app->translate( 'Please sign in to purchase.')
+				);
+    }
+    my $tmpl = $app->load_tmpl('paypal/purchase.tmpl');
+    my $ctx = $tmpl->context;
+    $ctx->stash('asset',$asset);
+    $ctx->stash('blog',$asset->blog);
+    $ctx->stash('author',$user);
+    return $app->build_page( $tmpl, { 
+	id => $asset->id,
+	blog_id => $asset->blog_id,
+    });
+}
+
+# FIXME: copied from MT::App::Community
+sub _login_user_commenter {
+    my $app = shift;
+
+    # Check if native user is logged in
+    my ($user) = $app->login();
+    return $user if $user;
+
+    # Check if commenter is logged in
+    my %cookies = $app->cookies();
+    if ( !$cookies{ $app->COMMENTER_COOKIE_NAME() } ) {
+        return undef;
+    }
+    my $session_key = $cookies{ $app->COMMENTER_COOKIE_NAME() }->value() || "";
+    $session_key =~ y/+/ /;
+    require MT::Session;
+    my $sess_obj = MT::Session->load( { id => $session_key } );
+    my $timeout = $app->config->CommentSessionTimeout;
+
+    if ($sess_obj) {
+        $app->{session} = $sess_obj;
+        if ( $user = $app->model('author')->load( { name => $sess_obj->name } ) ) {
+            $app->user($user);
+            return $user;
+        }
+        elsif ( $sess_obj->start() + $timeout < time ) {
+            delete $app->{session};
+            $app->_invalidate_commenter_session( \%cookies );
+            return undef;
+        }
+    }
+    return $user;
 }
 
 sub validate {
@@ -240,12 +306,16 @@ sub subscr_failed {
     # Subscription failed so it is unlikely one has been created.
     # Let's create one - this will at least surface in the UI and give admins a chance to follow
     # up with customer.
+    my $user_id;
+    if ($app->param('custom') =~ /user_id:(\d+)/) {
+	$user_id = $1;
+    }
     unless ($subsc->id) {
 	$subsc->product_id( $pid );
 	$subsc->blog_id( $product->blog_id );
 	$subsc->is_test( $app->param('ipn_test') );
 	$subsc->external_id( $id );
-	$subsc->author_id( $app->param('custom') );
+	$subsc->author_id( $user_id );
 	$subsc->source( 'paypal' );
     }
     $subsc->status( MT->model('sf.subscription')->FAILURE() );
@@ -315,10 +385,16 @@ sub subscr_signup {
 	}
     }
     $logger->debug("Creating subscription - product:".$product->id);
+
+    my $user_id;
+    if ($app->param('custom') =~ /user_id:(\d+)/) {
+	$user_id = $1;
+    }
+
     my $subsc = MT->model('sf.subscription')->new;
     $subsc->blog_id( $product->blog_id );
     $subsc->product_id( $product->id );
-    $subsc->author_id( $app->param('custom') );
+    $subsc->author_id( $user_id );
     $subsc->is_test( $app->param('ipn_test') );
     $subsc->external_id( $app->param('subscr_id') );
     $subsc->status( MT->model('sf.subscription')->ACTIVE() );
@@ -418,9 +494,16 @@ sub _process_payment {
 sub _init_new_payment {
     my $app = shift;
     my ($product) = @_;
+
+    my $user_id;
+    if ($app->param('custom') =~ /user_id:(\d+)/) {
+	$user_id = $1;
+    }
+
     my $payment = MT->model('sf.payment')->new;
     $payment->source( 'paypal' );
     $payment->blog_id( $product->blog_id );
+    $payment->author_id( $user_id );
     $payment->product_id( $app->param('item_number') );
     $payment->payer_email( $app->param('payer_email') );
     $payment->is_test( $app->param('test_ipn') ? 1 : 0 );

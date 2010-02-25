@@ -193,9 +193,21 @@ sub list_payment {
         $row->{is_test}      = $obj->is_test;
         $row->{is_pending}   = $obj->is_pending;
         $row->{is_refunded}  = $obj->is_refunded;
-        $row->{buyer}        = $obj->payer_email;
         $row->{status}       = $obj->payment_status;
         $row->{amount}       = sprintf('$%.2f',$obj->gross_amount);
+
+	if ($obj->author_id) {
+	    my $author = MT->model('author')->load( $obj->author_id );
+	    if ($author) {
+		$row->{buyer} = $author->name;
+		$row->{buyer_id} = $author->id;
+	    } else {
+		$row->{buyer} = "User not found";
+	    }
+	} else {
+	    $row->{buyer}        = $obj->payer_email;
+	}
+
 
         if ( my $ts = $obj->created_on ) {
             $row->{created_on_formatted} =
@@ -252,7 +264,17 @@ sub list_subscription {
 						   sort => 'created_on',
 						   direction => 'descend', 
 					         });
-
+	if ($payment && $payment->author_id) {
+	    my $author = MT->model('author')->load( $payment->author_id );
+	    if ($author) {
+		$row->{payer_name} = $author->name;
+		$row->{payer_id} = $author->id;
+	    } else {
+		$row->{payer_name} = "User not found";
+	    }
+	} else {
+	    $row->{payer_name} = "Anonymous";
+	}
         $row->{id}           = $obj->id;
         $row->{product_name} = encode_html($product->label);
         $row->{is_test}      = $obj->is_test;

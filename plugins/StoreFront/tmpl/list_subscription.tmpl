@@ -47,6 +47,7 @@
     <thead>
         <tr>
             <th class="cb"><input type="checkbox" name="id-head" value="all" class="select" /></th>
+            <th id="l-name"><__trans phrase="Subscriber"></th>
             <th id="l-name"><__trans phrase="Product Name"></th>
             <th id="l-type"><__trans phrase="Status"></th>
             <th id="l-date"><__trans phrase="Value"></th>
@@ -58,6 +59,7 @@
     </mt:if>
         <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if><mt:if name="is_test"> test</mt:if>">
             <td class="cb"><input type="checkbox" name="id" value="<mt:var name="id">" class="select" /></td>
+            <td><$mt:var name="payer_name"$></td>
             <td><$mt:var name="product_name"$></td>
             <td><$mt:var name="status"$></td>
             <td><$mt:var name="value"$></td>
