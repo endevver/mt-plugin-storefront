@@ -170,4 +170,3 @@ callbacks:
 tags:
   function:
     PayPalButton: $StoreFront::StoreFront::PayPal::Tags::button
-#    BuyButton: $StoreFront::StoreFront::Tags::buy_button

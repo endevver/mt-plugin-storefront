@@ -124,6 +124,9 @@
 #edit-one-time #subscription {
   display: none;
 }
+.dialog.dialog-screen { 
+  display: block;
+}
 .dialog { 
   display: none;
 }
