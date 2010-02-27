@@ -243,7 +243,7 @@ sub subscr_cancel {
     my $app = shift;
     $logger->debug('Processing subscription cancellation');
     my $id = $app->param('subscr_id');
-    my $subsc = MT->model('subscription')->load({ external_id => $id });
+    my $subsc = MT->model('sf.subscription')->load({ external_id => $id });
     unless ($subsc) {
 	MT->log({ message => "Could not find subscription with ID: $id" });
 	return $app->error("Error processing subscription cancellation");
@@ -254,7 +254,7 @@ sub subscr_cancel {
 	MT->log({ blog_id => $subsc->blog_id,
 		  message => "Warning: could not find product with ID: $pid, cancelling anyway." });
     }
-    $subsc->status( MT->model('subscription')->CANCELLED() );
+    $subsc->status( MT->model('sf.subscription')->CANCELLED() );
     $subsc->save or return $app->error("Unable to cancel subscription.");;
     # TODO - fire an email
     # TODO - fire callbacks
@@ -338,18 +338,34 @@ sub subscr_payment {
     my $app = shift;
     $logger->debug('Processing subscription payment');
 
+    my $pid = $app->param('item_number');
+    my $product = MT->model('asset.product')->load( $pid );
+    unless ($product) {
+	MT->log({ blog_id => 0,
+		  message => "Warning: could not find product with ID: $pid." });
+	return $app->error("Product ID $pid not found. Cannot process payment.");
+    }
+
     my $id = $app->param('subscr_id');
     my $subsc = MT->model('sf.subscription')->load({ external_id => $id });
     unless ($subsc) {
-	MT->log({ message => "Could not find subscription with ID: $id" });
-	return $app->error("Error processing subscription payment");
-    }
-    my $pid = $subsc->product_id;
-    my $product = MT->model('asset.product')->load( $pid );
-    unless ($product) {
-	MT->log({ blog_id => $subsc->blog_id,
-		  message => "Warning: could not find product with ID: $pid." });
-	return $app->error("Product ID $pid not found. Cannot process payment.");
+	MT->log({ message => "Could not find subscription with ID: $id, returning HTTP 500" });
+	$app->response_code( 500 );
+	$app->response_message( 'IPN Failure' );
+	return $app->error('Could not find subscription associated with payment.');
+
+	MT->log({ message => "Could not find subscription with ID: $id, creating temporary subscription" });
+	my $user_id;
+	if ($app->param('custom') =~ /user_id:(\d+)/) {
+	    $user_id = $1;
+	}
+	$subsc = MT->model('sf.subscription')->new;
+	$subsc->external_id( $id );
+	$subsc->status( MT->model('sf.subscription')->IN_PROCESS() );
+	$subsc->product_id( $app->param( 'item_number' ) );
+	$subsc->author_id( $user_id ); # this will get updated later I think...
+	$subsc->blog_id( $product->blog_id );
+	$subsc->save;
     }
     my $payment = _process_payment($app, $product);
     $payment->subscription_id( $subsc->id );
@@ -361,6 +377,21 @@ sub subscr_payment {
 sub subscr_signup {
     my $app = shift;
     $logger->debug('Processing signup');
+
+    # It is possible that a payment came in for a subscription before the sub 
+    # was created. In this case, a place holder subscription is created. So 
+    # we load it an populate it with the data we now have on hand.
+    my $sid = $app->param('subscr_id');
+
+    my $subsc = MT->model('sf.subscription')->new;
+    $subsc->external_id($sid);
+
+#    my $subsc = MT->model('sf.subscription')->load({ external_id => $sid });
+#    unless ($subsc) {
+#	$subsc = MT->model('sf.subscription')->new;
+#	$subsc->external_id($sid);
+#	$subsc->save; # save immediately
+#    }
 
     my $pid = $app->param('item_number');
     my $product = MT->model('asset.product')->load($pid);
@@ -391,12 +422,10 @@ sub subscr_signup {
 	$user_id = $1;
     }
 
-    my $subsc = MT->model('sf.subscription')->new;
     $subsc->blog_id( $product->blog_id );
     $subsc->product_id( $product->id );
     $subsc->author_id( $user_id );
     $subsc->is_test( $app->param('ipn_test') );
-    $subsc->external_id( $app->param('subscr_id') );
     $subsc->status( MT->model('sf.subscription')->ACTIVE() );
     $subsc->source( 'paypal' );
     $subsc->save or do {
@@ -464,11 +493,17 @@ sub _process_payment {
     my ($product) = @_;
     my $txn_id = $app->param('txn_id');
 
+    # Process a refund
     if ($app->param('mc_gross') < 0) {
 	if (my $parent = $app->param('parent_txn_id')) {
 	    my $original = MT->model('sf.payment')->load({ external_transaction_id => $parent });
 	    _process_refund($app, $original);
 	}
+    }
+
+    my $user_id;
+    if ($app->param('custom') =~ /user_id:(\d+)/) {
+	$user_id = $1;
     }
 
     my $payment = MT->model('sf.payment')->load( { external_transaction_id => $txn_id } );
@@ -478,6 +513,7 @@ sub _process_payment {
     if ($payment->payment_status && $payment->payment_status ne $app->param('payment_status')) {
 	# TODO - fire payment status change callbacks
     }
+    $payment->author_id( $user_id );
     $payment->payment_status( $app->param('payment_status') );
     if ($payment->payment_status() eq 'Pending') {
 	$payment->is_pending( 1 );

@@ -124,3 +124,19 @@
 #edit-one-time #subscription {
   display: none;
 }
+.dialog.dialog-screen { 
+  display: block;
+}
+.dialog { 
+  display: none;
+}
+.ui-dialog-content {
+  text-align: left;
+}
+.ui-dialog-content ul li label {
+  display: block;
+  float: left;
+  width: 120px;
+  text-align: right;
+  font-weight: bold;
+}

@@ -2,6 +2,28 @@ package StoreFront::Plugin;
 
 use strict;
 
+#sub load_tasks {
+#    my $cfg = MT->config;
+#    return {
+#	'MapPayments' => {
+#	    'label' => 'Map payments to subscriptions',
+#	    'frequency' => 5 * 60,
+#	    'code' => sub {
+#		StoreFront::Plugin->task_map_payments;
+#	      },
+#	}
+#    };
+#}
+#sub task_map_payments {
+#    my $this = shift;
+#    require MT::Util;
+#    my $mt = MT->instance;
+#    my @payments = MT->model('sf.payment')->load({ subscription_id => -1 });
+#    foreach my $p (@payments) {
+#    }
+#    return 1;
+#}
+
 sub load_list_filters {
     my $app = shift;
     return {

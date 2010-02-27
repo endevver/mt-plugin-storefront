@@ -69,7 +69,7 @@
     </mt:if>
         <tr class="<mt:if name="__odd__">odd<mt:else>even</mt:if><mt:if name="is_test"> test</mt:if><mt:if name="is_pending"> pending</mt:if><mt:if name="is_refunded"> refunded</mt:if>">
             <td class="cb"><input type="checkbox" name="id" value="<mt:var name="id">" class="select" /></td>
-            <td><$mt:var name="product_name"$></td>
+            <td><a href="?__mode=product&id=<$mt:var name="product_id"$>&blog_id=<$mt:var name="blog_id"$>"><$mt:var name="product_name"$></a></td>
             <td><$mt:var name="buyer"$></td>
             <td><mt:if name="is_refunded">Refunded<mt:else><$mt:var name="status"$></mt:if></td>
             <td><$mt:var name="amount"$></td>

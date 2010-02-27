@@ -121,6 +121,8 @@ options:
        discontinued
        pre-order only
 
+#tasks: $StoreFront::StoreFront::Plugin::load_tasks
+
 applications:
   paypal:
     handler: 'StoreFront::PayPal::App'
@@ -155,6 +157,7 @@ applications:
       list_product: $StoreFront::StoreFront::CMS::list_product
       list_payment: $StoreFront::StoreFront::CMS::list_payment
       list_subscription: $StoreFront::StoreFront::CMS::list_subscription
+      product: $StoreFront::StoreFront::CMS::product_details
 #      create_sub: $StoreFront::StoreFront::CMS::create_subscription
   comments:
     methods:
@@ -167,4 +170,3 @@ callbacks:
 tags:
   function:
     PayPalButton: $StoreFront::StoreFront::PayPal::Tags::button
-#    BuyButton: $StoreFront::StoreFront::Tags::buy_button
