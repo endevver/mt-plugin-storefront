@@ -43,9 +43,10 @@ sub button {
     my $user = $ctx->stash('author');
 
     my $button;
-    $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/btn_xpressCheckout.gif' if ($config->{buynow_button} eq 'Checkout');
-    $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but23.gif' if ($config->{buynow_button} eq 'Buy Now 1');
-    $button = 'https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but3.gif' if ($config->{buynow_button} eq 'Buy Now 2');
+    $button = 'https://www.paypal.com/en_US/i/btn/btn_buynow_LG.gif' if ($config->{buynow_button} eq 'Buy Now (Large, with CC)');
+    $button = 'https://www.paypal.com/en_US/i/btn/btn_buynow_SM.gif' if ($config->{buynow_button} eq 'Buy Now (Small)');
+    $button = 'https://www.paypal.com/en_US/i/btn/btn_buynow_LG.gif' if ($config->{buynow_button} eq 'Buy Now (Large)');
+
 
     if ($args->{require_login}) {
 	return '<a href="'.$ctx->_hdlr_admin_cgi_path.MT->config->CommentScript."?__mode=paypal_purchase&id=".$asset->id.'"><img src="'.$button.'" alt="Buy Now" /></a>';

@@ -94,7 +94,7 @@ options:
     scope: system
     fieldset: paypal
     values: >
-       "https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/btn_xpressCheckout.gif":"Checkout","https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but23.gif":"Buy Now 1","https://www.paypalobjects.com/WEBSCR-610-20100201-1/en_US/i/btn/x-click-but3.gif":"Buy Now 2"
+       "https://www.paypal.com/en_US/i/btn/btn_buynowCC_LG.gif":"Buy Now (Large, with CC)","https://www.paypal.com/en_US/i/btn/btn_buynow_SM.gif":"Buy Now (Small)","https://www.paypal.com/en_US/i/btn/btn_buynow_LG.gif","Buy Now (Large)"
     default: Checkout
   purchase_success:
     type: text
