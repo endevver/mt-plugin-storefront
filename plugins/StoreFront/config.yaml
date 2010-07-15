@@ -1,7 +1,7 @@
 id: StoreFront
 name: 'Store Front'
 description: 'A plugin that allows for your system to accept, receive and track payments and orders for good and subscriptions on your system.'
-version: 0.1
+version: 0.2
 schema_version: 1.95
 
 object_types:
