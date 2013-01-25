@@ -9,6 +9,8 @@ using Movable Type or Melody.
 
 # Prerequisites
 
+Store Front is currently compatible with Movable Type 4 only.
+
 ## Config Assistant
 
 This plugin requires the Config Assistant plugin. Movable Type users
